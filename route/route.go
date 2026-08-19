@@ -7,6 +7,7 @@ import (
 	"chihqiang/msg-push/handler"
 	"chihqiang/msg-push/middleware"
 	"chihqiang/msg-push/svc"
+	"chihqiang/msg-push/ui"
 
 	"github.com/chihqiang/infra-go/httpx"
 )
@@ -27,6 +28,7 @@ func Register(server *httpx.Server, s *svc.ServiceContext) {
 			httpx.OkJSON(w, map[string]string{"status": "ok"})
 		},
 	})
+	server.AddRoute(ui.DistDirFS)
 
 	mh := handler.NewMessageHandler(s)
 	ah := handler.NewAccountHandler(s)

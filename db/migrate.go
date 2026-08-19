@@ -51,6 +51,13 @@ func Seed(gormDB *gorm.DB, accountUsername, accountPassword string) error {
 
 // seedDemoApp 创建演示应用。
 func seedDemoApp(gormDB *gorm.DB) error {
+	var count int64
+	if err := gormDB.Model(&model.Application{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
 	secretHash, err := hash.BcryptHashDefault("test-secret")
 	if err != nil {
 		return fmt.Errorf("seed demo app hash: %w", err)
@@ -76,6 +83,13 @@ func seedDemoApp(gormDB *gorm.DB) error {
 
 // seedAccount 创建账号种子。
 func seedAccount(gormDB *gorm.DB, username, password string) error {
+	var count int64
+	if err := gormDB.Model(&model.Account{}).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
 	if username == "" || password == "" {
 		logger.Warn("account seed skipped: empty username/password")
 		return nil

@@ -19,7 +19,7 @@
 
 - Go 1.25 + infra-go（HTTP / ORM / Redis / 任务队列 / JWT / 日志）
 - MySQL（或 SQLite） + Redis
-- Vue 3 + Vite + Tailwind（独立 webui 子模块）
+- Vue 3 + Vite + Tailwind
 
 ## 快速开始
 
@@ -27,11 +27,11 @@
 # 1. 启动基础服务（MySQL + Redis）
 docker compose -f deploy/docker-compose.yml up -d
 
-# 2. 启动后端（默认 :8080，自动建表与种子数据）
-go run .
+# 2. 启动管理后台（可选，http://localhost:5173）
+cd ui && npm install && npm run build
 
-# 3. 启动管理后台（可选，http://localhost:5173）
-cd webui && npm install && npm run dev
+# 3. 启动后端（默认 :8080，自动建表与种子数据）
+go run .
 ```
 
 ## 文档
