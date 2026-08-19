@@ -1,0 +1,54 @@
+# msg-push 容器配置
+# 所有连接信息通过环境变量覆盖（conf.UseEnv() 会展开 ${VAR} 占位符）。
+# 未设置环境变量时，使用 Dockerfile 中声明的默认值（DB_HOST=mysql / REDIS_ADDR=redis:6379）。
+# 建议在部署时至少覆盖：DB_PASSWORD、JWT_SECRET、ACCOUNT_SEED_PASSWORD。
+
+app:
+  name: msg-push
+  env: ${APP_ENV}
+
+server:
+  host: ${SERVER_HOST}
+  port: ${SERVER_PORT}
+
+logger:
+  # 日志级别（zapcore.Level）：-1=debug, 0=info, 1=warn, 2=error
+  level: 0
+  encoding: console
+  output:
+    - stdout
+  app_name: msg-push
+
+db:
+  driver: mysql
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  username: ${DB_USER}
+  password: ${DB_PASSWORD}
+  database: ${DB_NAME}
+  max_idle_conns: 10
+  max_open_conns: 100
+
+redis:
+  addr: ${REDIS_ADDR}
+  key_prefix: msg-push
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: msg-push
+  access_token_expire: 2h
+  refresh_token_expire: 168h
+
+taskq:
+  # 注意：键名需与 Go 字段匹配（infra-go mapping 按字段名 canonical 匹配），
+  # snake_case（如 redis_addr）无法注入 RedisAddr 字段，会回退到默认 127.0.0.1:6379。
+  redisAddr: ${TASKQ_REDIS_ADDR}
+  concurrency: 10
+  defaultMaxRetry: 3
+  defaultTimeout: 30m
+  defaultQueue: default
+
+# 账号种子（仅首次建库时创建）
+account_seed:
+  username: ${ACCOUNT_SEED_USERNAME}
+  password: ${ACCOUNT_SEED_PASSWORD}
