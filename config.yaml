@@ -1,0 +1,55 @@
+# msg-push 服务配置（开发环境默认值）
+# 敏感信息（数据库密码、JWT Secret、Redis 密码等）通过环境变量 ${VAR} 覆盖。
+
+app:
+  name: msg-push
+  env: dev
+
+server:
+  host: 0.0.0.0
+  port: 8080
+
+logger:
+  # 日志级别（zapcore.Level）：-1=debug, 0=info, 1=warn, 2=error
+  level: 0
+  encoding: console
+  output:
+    - stdout
+  app_name: msg-push
+
+# 默认使用 MySQL（本地用 docker compose -f deploy/docker-compose.yml up -d 启动基础服务）。
+# 也可切换回 SQLite（开箱即用）：
+#   db: { driver: sqlite, database: msg-push.db }
+# 支持环境变量覆盖：
+#   db: { driver: mysql, host: ${DB_HOST}, port: 3306, username: ${DB_USER}, password: ${DB_PASSWORD}, database: ${DB_NAME} }
+db:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: msgpush123456
+  database: msg_push
+  max_idle_conns: 10
+  max_open_conns: 100
+
+redis:
+  addr: 127.0.0.1:6379
+  key_prefix: msg-push
+
+jwt:
+  secret: change-me-in-prod
+  issuer: msg-push
+  access_token_expire: 2h
+  refresh_token_expire: 168h
+
+taskq:
+  redis_addr: 127.0.0.1:6379
+  concurrency: 10
+  default_max_retry: 3
+  default_timeout: 30m
+  default_queue: default
+
+# 账号种子（仅首次建库时创建）
+account_seed:
+  username: admin
+  password: admin123
