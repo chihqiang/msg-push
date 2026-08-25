@@ -17,16 +17,12 @@ import (
 	"chihqiang/msg-push/config"
 	"chihqiang/msg-push/db"
 	"chihqiang/msg-push/route"
-	"chihqiang/msg-push/scheduler"
 	"chihqiang/msg-push/servicex"
 	"chihqiang/msg-push/svc"
-	"chihqiang/msg-push/webhookx"
-	"chihqiang/msg-push/worker"
 
 	"github.com/chihqiang/infra-go/conf"
 	"github.com/chihqiang/infra-go/httpx"
 	"github.com/chihqiang/infra-go/logger"
-	"github.com/chihqiang/infra-go/service"
 )
 
 func main() {
@@ -65,30 +61,7 @@ func main() {
 	server := httpx.NewServer(cfg.Server)
 	route.Register(server, ctx)
 
-	// 6. 消费端（消费 msg:send / msg:batch 完成实际投递）
-	consumer := worker.NewConsumer(ctx)
-	// 6.1 Webhook 异步投递器（outbox 模式，含重试退避）
-	dispatcher := webhookx.NewDispatcher(ctx)
-	// 6.2 短信回执超时扫描器
-	smsScanner := scheduler.NewSMSTimeoutScanner(ctx)
-	// 6.3 配额统计同步器
-	quotaSyncer := scheduler.NewQuotaSyncer(ctx)
-	// 6.4 短信状态主动查询扫描器（服务商无回执时主动补单）
-	statusPuller := scheduler.NewStatusPuller(ctx)
-
-	// 7. 服务编排：统一启停，支持优雅关闭
-	sg := service.NewServiceGroup()
-	sg.Add(servicex.NewQuotaSyncerService(quotaSyncer))
-	sg.Add(servicex.NewSMSTimeoutScannerService(smsScanner))
-	sg.Add(servicex.NewStatusPullerService(statusPuller))
-	sg.Add(servicex.NewWebhookDispatcherService(dispatcher))
-	sg.Add(servicex.NewConsumerService(consumer))
-	sg.Add(service.WithStart(func() {
-		logger.Infof("msg-push api listening on %s:%d (env=%s)",
-			cfg.Server.Host, cfg.Server.Port, cfg.App.Env)
-		if err := server.Start(); err != nil {
-			logger.Errorf("http server stopped: %v", err)
-		}
-	}))
+	// 6. 后台服务统一装配（消费端 / Webhook 投递 / 定时调度 / HTTP API），统一启停、优雅关闭
+	sg := servicex.NewServiceGroup(ctx, server)
 	sg.Start()
 }
