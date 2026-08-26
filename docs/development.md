@@ -44,6 +44,7 @@ dto/                 # 请求/响应结构
 core/pipeline/       # 消息管道：队列契约+生产者/消费者、选择器、渲染器、规则引擎、终态
 core/scheduler/      # 后台调度：配额同步、超时扫描、状态补单、Webhook outbox 投递
 core/sender/         # 服务商发送器（8 个）+ 服务商元信息注册表
+core/app/            # 后台服务装配：NewServiceGroup 统一启停
 svc/                 # 依赖装配
 db/                  # 迁移 + 种子
 deploy/              # docker-compose
@@ -105,7 +106,7 @@ type CallbackParser interface {
 
 ### 1. 注册服务商元信息（core/sender/sender.go）
 
-在 `registry` 列表追加一条 `Meta`：
+在 `providerMetas` 列表追加一条 `Meta`：
 
 ```go
 {

@@ -19,13 +19,13 @@ flowchart LR
 
 | 文件 | 是否必改 | 说明 |
 |------|:---:|------|
-| `core/sender/sender.go` | ✅ 必改 | 注册服务商元信息（`registry` 清单 + `Meta` 条目），驱动管理后台表单 |
+| `core/sender/sender.go` | ✅ 必改 | 注册服务商元信息（`providerMetas` 清单 + `Meta` 条目），驱动管理后台表单 |
 | `core/sender/xxx_sms.go` | ✅ 必改 | 新建发送器，实现 `Sender` 接口 |
 | `core/sender/factory.go` | ✅ 必改 | 把发送器注册进工厂 `NewFactory()` |
 | `core/sender/xxx_sms.go` | 短信建议实现 | 实现 `CallbackParser`，解析服务商回执 |
 | 发送器内 | 可选 | 实现 `BatchSender` 批量发送 |
 | 发送器内 | 可选 | 实现 `StatusQuerier` 主动查询回执（补单） |
-| `core/sender/xxx_sms_test.go` | 建议 | 参照 `senders_test.go` 编写单测 |
+| `core/sender/xxx_sms_test.go` | 建议 | 按"一源文件一测试文件"约定新建对应测试，参照 `aliyun_sms_test.go` / `tencent_sms_test.go` 编写 |
 
 > 新增一个短信服务商通常**不需要**改动 `core/pipeline/`、`handler/`、`model/`、前端代码：消费端只依赖 `sender.DefaultResolver` 与接口抽象，前端表单由 `sender.Meta.ConfigFields` 动态生成。
 
@@ -47,7 +47,7 @@ const (
 
 > 服务商代码是全局唯一标识，会写入 `msg_provider_accounts.provider_code`，发送器与回调解析器都通过它互相匹配，务必保证三处完全一致。
 
-#### 1.2 在 `registry` 列表追加一条 `Meta`
+#### 1.2 在 `providerMetas` 列表追加一条 `Meta`
 
 参照现有的阿里/腾讯/网易短信条目，追加：
 
@@ -350,7 +350,7 @@ type StatusQuerier interface {
 
 ## 四、编写测试
 
-参照现有 `senders_test.go` 与 `callback_parsers_test.go`，用 `httptest` 起 mock server 断言请求头/请求体与响应解析：
+测试按"一源文件一测试文件"组织（`xxx_sms.go` 对应 `xxx_sms_test.go`）。参照现有 `aliyun_sms_test.go` / `tencent_sms_test.go` / `callback_test.go`，用 `httptest` 起 mock server 断言请求头/请求体与响应解析：
 
 ```go
 func TestXxxSendSuccess(t *testing.T) {

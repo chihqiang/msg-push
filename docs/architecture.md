@@ -39,6 +39,7 @@ flowchart LR
 | `core/pipeline/` | 消息处理管道：任务队列契约 + 生产者入队 + 消费者投递、规则引擎、终态流转 |
 | `core/sender/` | 服务商发送器：各服务商实现 Sender / BatchSender / StatusQuerier / CallbackParser；接口/结构体/常量在 `types.go`，元信息注册表在 `sender.go`，工厂在 `factory.go`，回调在 `callback.go` |
 | `core/scheduler/` | 后台调度：配额同步、短信超时扫描、状态主动补单、Webhook outbox 投递 |
+| `core/app/` | 后台服务装配：将消费端/调度/Webhook/HTTP API 适配为 `service.Service`，纳入 `ServiceGroup` 统一启停（`NewServiceGroup`） |
 | `svc/` | 依赖装配 `ServiceContext`（DB/Redis/Producer/Logger 等） |
 | `config/` | 配置结构体 |
 | `route/` | 路由注册与中间件链 |
@@ -134,7 +135,8 @@ pending --CAS--> sending --发送成功--> success
 ├── core/                   # 核心后台
 │   ├── pipeline/           # 消息管道：队列契约 + 生产者/消费者、选择器、渲染器、规则引擎
 │   ├── scheduler/          # 后台调度：配额同步、超时扫描、状态补单、Webhook 投递
-│   └── sender/             # 服务商发送器 + 服务商元信息注册表
+│   ├── sender/             # 服务商发送器 + 服务商元信息注册表
+│   └── app/                # 后台服务装配：统一启停（ServiceGroup）
 ├── svc/                    # 依赖装配
 ├── db/                     # 迁移与种子
 ├── deploy/                 # docker-compose
