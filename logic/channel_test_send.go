@@ -7,7 +7,6 @@ import (
 
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
-	"chihqiang/msg-push/queue"
 	"chihqiang/msg-push/svc"
 
 	"github.com/chihqiang/infra-go/httpx"
@@ -50,7 +49,7 @@ func (l *ChannelTestLogic) Test(ctx context.Context, channelID uint, req *dto.Te
 		return nil, err
 	}
 
-	if _, err := queue.EnqueueSendMessage(ctx, l.svc.Producer, queue.SendMessagePayload{
+	if _, err := EnqueueSendMessage(ctx, l.svc.Producer, SendMessagePayload{
 		TaskID:    task.TaskID,
 		RequestID: task.RequestID,
 		ChannelID: channelID,

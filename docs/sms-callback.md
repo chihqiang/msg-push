@@ -53,7 +53,7 @@ curl -s http://127.0.0.1:8080/api/v1/account/provider-accounts \
 
 ### 各服务商回执格式
 
-msg-push 内置了阿里云 / 腾讯云 / 网易云信三个短信服务商的**定制解析器**（`sender/callback_parsers.go`），自动按各自格式解析：
+msg-push 内置了阿里云 / 腾讯云 / 网易云信三个短信服务商的**定制解析器**（分别位于 `core/sender/aliyun_sms.go` / `tencent_sms.go` / `netease_sms.go`），自动按各自格式解析：
 
 | 服务商 | 回执格式 | 成功响应（服务商期望） |
 |--------|----------|------------------------|
@@ -115,7 +115,7 @@ curl -X POST http://127.0.0.1:8080/api/callback/{id} \
 
 ## 六、接入新的短信服务商
 
-如需为自定义/其他短信服务商接入回执，请参考 [新增短信服务商指南](add-new-sms-provider.md) 的「实现回调解析器」章节：实现 `CallbackParser` 并在 `sender/callback_parsers.go` 注册，即可获得与阿里/腾讯/网易同等的定制解析能力。
+如需为自定义/其他短信服务商接入回执，请参考 [新增短信服务商指南](add-new-sms-provider.md) 的「实现回调解析器」章节：在 `core/sender/xxx_sms.go` 内实现 `CallbackParser` 并注册，即可获得与阿里/腾讯/网易同等的定制解析能力。
 
 ## 相关文档
 

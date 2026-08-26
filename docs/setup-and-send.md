@@ -33,7 +33,7 @@ flowchart LR
 
 1. 选择服务商（如 **阿里云短信**）；
 2. 填写账号名称（如 `阿里云短信主账号`）；
-3. 在「服务商配置」分组中填写该服务商的**接入参数**（字段由后端 `sender/registry.go` 定义，前端自动渲染）：
+3. 在「服务商配置」分组中填写该服务商的**接入参数**（字段由后端 `core/sender/sender.go` 的 `Meta.ConfigFields` 定义，前端自动渲染）：
    - 阿里云短信：`AccessKey ID`、`AccessKey Secret`、`签名`；
    - SMTP：`host`、`port`、`username`、`password`、`from` 等；
 4. 点击「保存」。

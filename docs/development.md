@@ -41,14 +41,10 @@ logic/               # 业务逻辑：落库、入队、查询
 middleware/          # 应用鉴权(HMAC)/账号JWT/配额/限流
 model/               # GORM 模型（19 张表）
 dto/                 # 请求/响应结构
-worker/              # 消费端：投递、批量、规则引擎、终态
-  channel/           #   选择器/熔断/节点缓存
-  template/          #   模板渲染
-sender/              # 服务商发送器（8 个）+ 服务商元信息注册表
-queue/               # 队列封装（asynq）
-scheduler/           # 后台调度（4 个）
-webhookx/            # Webhook outbox 投递
-servicex/ svc/       # 服务编排 / 依赖装配
+core/pipeline/       # 消息管道：队列契约+生产者/消费者、选择器、渲染器、规则引擎、终态
+core/scheduler/      # 后台调度：配额同步、超时扫描、状态补单、Webhook outbox 投递
+core/sender/         # 服务商发送器（8 个）+ 服务商元信息注册表
+svc/                 # 依赖装配
 db/                  # 迁移 + 种子
 deploy/              # docker-compose
 webui/               # 管理后台（子模块）
@@ -95,7 +91,7 @@ type StatusQuerier interface {
 
 ### 回调解析器 CallbackParser
 
-服务商定制回执解析（`sender/callback_parsers.go`），将原始回执解析为统一结果：
+服务商定制回执解析（`core/sender/xxx_sms.go` 内实现 `CallbackParser`），将原始回执解析为统一结果：
 
 ```go
 type CallbackParser interface {
@@ -107,7 +103,7 @@ type CallbackParser interface {
 
 以新增"某某短信"为例（**完整、可照着做的步骤见 [新增短信服务商指南](add-new-sms-provider.md)**，以下为摘要）：
 
-### 1. 注册服务商元信息（sender/registry.go）
+### 1. 注册服务商元信息（core/sender/sender.go）
 
 在 `registry` 列表追加一条 `Meta`：
 
@@ -119,7 +115,7 @@ type CallbackParser interface {
 }
 ```
 
-### 2. 实现发送器（sender/xxx_sms.go）
+### 2. 实现发送器（core/sender/xxx_sms.go）
 
 ```go
 type XxxSMSSender struct{}
@@ -135,7 +131,7 @@ func (s *XxxSMSSender) Send(ctx context.Context, req *SendRequest) (*SendRespons
 }
 ```
 
-### 3. 注册到工厂（sender/resolver.go）
+### 3. 注册到工厂（core/sender/factory.go）
 
 ```go
 f.Register(&XxxSMSSender{})
@@ -143,7 +139,7 @@ f.Register(&XxxSMSSender{})
 
 ### 4.（可选）实现批量 / 状态查询 / 回调解析
 
-按需实现 `BatchSender` / `StatusQuerier`，并在 `sender/callback_parsers.go` 注册回调解析器。
+按需实现 `BatchSender` / `StatusQuerier`，并在 `core/sender/xxx_sms.go` 内实现 `CallbackParser`（注册表见 `callback.go`）。
 
 ### 5. 测试
 
@@ -151,9 +147,8 @@ f.Register(&XxxSMSSender{})
 
 ## 五、新增后台调度器
 
-1. 在 `scheduler/` 新建调度器（参考 `quota_syncer.go`）；
-2. 在 `servicex/servicex.go` 实现 `service.Service` 适配器（Start/Stop）；
-3. 在 `main.go` 中 `sg.Add(...)` 纳入统一启停。
+1. 在 `core/scheduler/` 新建调度器（参考 `quota_syncer.go`）；
+2. 在 `core/app/app.go` 的 `NewServiceGroup` 中 `sg.Add(...)` 纳入统一启停（组件需实现无返回值的 `Start()`/`Stop()`）。
 
 ## 六、新增数据表
 

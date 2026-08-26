@@ -12,13 +12,13 @@ flowchart LR
 
     subgraph msg-push
         API[HTTP API<br/>handler/logic] -->|创建任务 + 入队| Q[(Redis<br/>asynq 队列)]
-        Q --> W[消费端 Worker<br/>worker/]
+        Q --> W[消息管道<br/>core/pipeline/]
         W --> P[服务商<br/>aliyun/tencent/smtp/...]
         P -->|回执回调| CB[回调接收<br/>/api/callback/{id}]
         CB --> DB[(MySQL)]
         W --> DB
-        SCH[后台调度器<br/>scheduler/] --> DB
-        SCH --> WH[Webhook 投递<br/>webhookx/]
+        SCH[后台调度<br/>core/scheduler/] --> DB
+        SCH --> WH[Webhook 投递<br/>core/scheduler/]
         WH -->|POST 通知| W2[接收方系统]
     end
 
@@ -36,12 +36,9 @@ flowchart LR
 | `model/` | GORM 数据模型（表结构） |
 | `dto/` | 请求 / 响应数据结构 |
 | `middleware/` | 中间件：应用鉴权、账号 JWT 鉴权、配额、限流、签名校验 |
-| `worker/` | 消费端：消息投递、批量投递、规则引擎、终态流转 |
-| `sender/` | 服务商发送器：各服务商实现 Sender / BatchSender / StatusQuerier / CallbackParser；内含服务商元信息注册表（`registry.go`：配置字段、能力声明） |
-| `queue/` | 任务队列封装（asynq） |
-| `scheduler/` | 后台调度：配额同步、短信超时扫描、状态主动补单 |
-| `webhookx/` | Webhook outbox 异步投递器 |
-| `servicex/` | 将各后台服务适配为 `service.Service`，纳入统一启停 |
+| `core/pipeline/` | 消息处理管道：任务队列契约 + 生产者入队 + 消费者投递、规则引擎、终态流转 |
+| `core/sender/` | 服务商发送器：各服务商实现 Sender / BatchSender / StatusQuerier / CallbackParser；接口/结构体/常量在 `types.go`，元信息注册表在 `sender.go`，工厂在 `factory.go`，回调在 `callback.go` |
+| `core/scheduler/` | 后台调度：配额同步、短信超时扫描、状态主动补单、Webhook outbox 投递 |
 | `svc/` | 依赖装配 `ServiceContext`（DB/Redis/Producer/Logger 等） |
 | `config/` | 配置结构体 |
 | `route/` | 路由注册与中间件链 |
@@ -50,9 +47,8 @@ flowchart LR
 
 ### 关键子目录
 
-- `worker/channel/`：通道节点缓存与选择器（`Selector`）、熔断
-- `worker/template/`：模板渲染器（变量映射、占位符替换）
-- `webhookx/`：Webhook 异步投递器（outbox + 重试退避）
+- `core/pipeline/`：消息管道（任务契约、选择器、渲染器、规则引擎、终态流转均在此包）
+- `core/scheduler/`：后台调度与 Webhook 异步投递器（outbox + 重试退避）
 
 ## 一次消息投递的完整链路
 
@@ -135,13 +131,11 @@ pending --CAS--> sending --发送成功--> success
 ├── handler/ logic/ dto/    # HTTP 三层
 ├── model/                  # 数据模型
 ├── middleware/             # 中间件
-├── worker/                 # 消费端
-│   ├── channel/ template/  # 选择器与渲染器
-├── sender/                 # 服务商发送器 + 服务商元信息注册表
-├── queue/                  # 队列封装
-├── scheduler/              # 后台调度
-├── webhookx/               # Webhook 投递
-├── servicex/ svc/          # 服务编排与装配
+├── core/                   # 核心后台
+│   ├── pipeline/           # 消息管道：队列契约 + 生产者/消费者、选择器、渲染器、规则引擎
+│   ├── scheduler/          # 后台调度：配额同步、超时扫描、状态补单、Webhook 投递
+│   └── sender/             # 服务商发送器 + 服务商元信息注册表
+├── svc/                    # 依赖装配
 ├── db/                     # 迁移与种子
 ├── deploy/                 # docker-compose
 └── webui/                  # 管理后台（子模块）

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"chihqiang/msg-push/core/sender"
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
-	"chihqiang/msg-push/sender"
 )
 
 func TestMarshalParams(t *testing.T) {

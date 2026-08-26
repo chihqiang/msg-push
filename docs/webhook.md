@@ -47,7 +47,7 @@ sequenceDiagram
     end
 ```
 
-- **提交解耦**：发送流程只写入 outbox 日志，实际 HTTP 投递由 `webhookx.Dispatcher` 异步完成；
+- **提交解耦**：发送流程只写入 outbox 日志，实际 HTTP 投递由 `core/scheduler.Dispatcher` 异步完成；
 - **可靠性**：记录落库（不依赖内存队列），重启不丢；
 - **多实例安全**：领取时用乐观锁（random token）防并发重复投递。
 

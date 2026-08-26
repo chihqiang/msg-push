@@ -8,7 +8,6 @@ import (
 
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
-	"chihqiang/msg-push/queue"
 	"chihqiang/msg-push/svc"
 
 	"github.com/chihqiang/infra-go/httpx"
@@ -70,7 +69,7 @@ func (l *MessageLogic) send(ctx context.Context, app *model.Application, req *dt
 	}
 
 	// 入队投递任务
-	if _, err := queue.EnqueueSendMessage(ctx, l.svc.Producer, queue.SendMessagePayload{
+	if _, err := EnqueueSendMessage(ctx, l.svc.Producer, SendMessagePayload{
 		TaskID:     task.TaskID,
 		RequestID:  task.RequestID,
 		AppID:      task.AppID,
@@ -165,7 +164,7 @@ func (l *MessageLogic) BatchSend(ctx context.Context, app *model.Application, re
 	failed := total - created
 	if created > 0 {
 		// 整批入队一条 msg:batch
-		if _, err := queue.EnqueueSendBatchMessage(ctx, l.svc.Producer, queue.SendBatchMessagePayload{BatchID: batchID, RequestID: requestID}); err != nil {
+		if _, err := EnqueueSendBatchMessage(ctx, l.svc.Producer, SendBatchMessagePayload{BatchID: batchID, RequestID: requestID}); err != nil {
 			logger.Errorf("enqueue batch %s failed: %v", batchID, err)
 			// 入队失败：批次下所有任务标记失败，避免永久滞留
 			_ = l.svc.DB.WithContext(ctx).Model(&model.PushTask{}).

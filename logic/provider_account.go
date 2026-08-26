@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
+	"chihqiang/msg-push/core/sender"
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
-	"chihqiang/msg-push/sender"
 	"chihqiang/msg-push/svc"
 
 	"github.com/chihqiang/infra-go/stringx"

@@ -82,7 +82,7 @@ GET /health
 - `GET /statistics/top-applications`：Top 应用；
 - `GET /statistics/recent-activities`：最近活动。
 
-后台 `scheduler/quota_syncer.go` 定时同步配额统计。
+后台 `core/scheduler/quota_syncer.go` 定时同步配额统计。
 
 ## 六、生产部署建议
 

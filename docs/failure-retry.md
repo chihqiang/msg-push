@@ -6,7 +6,7 @@ msg-push 通过**智能路由 + 失败规则引擎 + 有限重试**三套机制�
 
 ### 选择器 Selector
 
-消费端投递前通过 `worker/channel.Selector` 选择服务商账号：
+消费端投递前通过 `core/pipeline.Selector` 选择服务商账号：
 
 - 按通道 + 消息类型筛选；
 - 结合签名映射；
@@ -32,7 +32,7 @@ msg-push 通过**智能路由 + 失败规则引擎 + 有限重试**三套机制�
 
 ## 二、失败规则引擎
 
-`worker/rule_engine.go` 提供可配置的失败处理规则（`msg_failure_rules` 表），命中后执行相应动作。
+`core/pipeline/rule_engine.go` 提供可配置的失败处理规则（`msg_failure_rules` 表），命中后执行相应动作。
 
 ### 场景
 

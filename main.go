@@ -5,8 +5,8 @@
 //   - 消费端 Worker：消费 taskq(asynq/Redis) 入队的投递任务，完成选通道、模板渲染、多服务商发送、重试/切供应商
 //   - 后台调度：Webhook 异步投递、短信回执超时扫描、短信状态主动查询、配额统计同步
 //
-// 依赖组件经 svc.ServiceContext 统一装配，全部后台服务通过 servicex 适配器纳入
-// service.NewServiceGroup 统一启停，支持优雅关闭。
+// 依赖组件经 svc.ServiceContext 统一装配，全部后台服务纳入 service.NewServiceGroup
+// 统一启停，支持优雅关闭。
 package main
 
 import (
@@ -15,9 +15,9 @@ import (
 	"path/filepath"
 
 	"chihqiang/msg-push/config"
+	"chihqiang/msg-push/core/app"
 	"chihqiang/msg-push/db"
 	"chihqiang/msg-push/route"
-	"chihqiang/msg-push/servicex"
 	"chihqiang/msg-push/svc"
 
 	"github.com/chihqiang/infra-go/conf"
@@ -62,6 +62,6 @@ func main() {
 	route.Register(server, ctx)
 
 	// 6. 后台服务统一装配（消费端 / Webhook 投递 / 定时调度 / HTTP API），统一启停、优雅关闭
-	sg := servicex.NewServiceGroup(ctx, server)
+	sg := app.NewServiceGroup(ctx, server)
 	sg.Start()
 }

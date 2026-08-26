@@ -8,10 +8,10 @@
 
 ```mermaid
 flowchart LR
-    W[Worker 消费端] -->|DefaultResolver.GetSender| S[你的发送器<br/>sender/xxx_sms.go]
+    W[Worker 消费端] -->|DefaultResolver.GetSender| S[你的发送器<br/>core/sender/xxx_sms.go]
     S -->|HTTP 调用| P[服务商 API]
     P -->|回执回调 POST /api/callback/{id}| CB[CallbackHandler]
-    CB -->|GetCallbackParser| CP[回调解析器<br/>sender/callback_parsers.go]
+    CB -->|GetCallbackParser| CP[回调解析器<br/>core/sender/xxx_sms.go]
     CP -->|统一结果| DB[(MySQL)]
 ```
 
@@ -19,23 +19,23 @@ flowchart LR
 
 | 文件 | 是否必改 | 说明 |
 |------|:---:|------|
-| `sender/registry.go` | ✅ 必改 | 注册服务商元信息（配置字段、能力声明），驱动管理后台表单 |
-| `sender/xxx_sms.go` | ✅ 必改 | 新建发送器，实现 `Sender` 接口 |
-| `sender/resolver.go` | ✅ 必改 | 把发送器注册进工厂 `NewFactory()` |
-| `sender/callback_parsers.go` | 短信建议实现 | 实现 `CallbackParser`，解析服务商回执 |
-| `sender/batch.go` / 发送器内 | 可选 | 实现 `BatchSender` 批量发送 |
+| `core/sender/sender.go` | ✅ 必改 | 注册服务商元信息（`registry` 清单 + `Meta` 条目），驱动管理后台表单 |
+| `core/sender/xxx_sms.go` | ✅ 必改 | 新建发送器，实现 `Sender` 接口 |
+| `core/sender/factory.go` | ✅ 必改 | 把发送器注册进工厂 `NewFactory()` |
+| `core/sender/xxx_sms.go` | 短信建议实现 | 实现 `CallbackParser`，解析服务商回执 |
+| 发送器内 | 可选 | 实现 `BatchSender` 批量发送 |
 | 发送器内 | 可选 | 实现 `StatusQuerier` 主动查询回执（补单） |
-| `sender/xxx_sms_test.go` | 建议 | 参照 `senders_test.go` 编写单测 |
+| `core/sender/xxx_sms_test.go` | 建议 | 参照 `senders_test.go` 编写单测 |
 
-> 新增一个短信服务商通常**不需要**改动 `worker/`、`handler/`、`model/`、前端代码：消费端只依赖 `sender.DefaultResolver` 与接口抽象，前端表单由 `sender.Meta.ConfigFields` 动态生成。
+> 新增一个短信服务商通常**不需要**改动 `core/pipeline/`、`handler/`、`model/`、前端代码：消费端只依赖 `sender.DefaultResolver` 与接口抽象，前端表单由 `sender.Meta.ConfigFields` 动态生成。
 
 ## 二、必改步骤
 
-### 步骤 1：注册服务商元信息（`sender/registry.go`）
+### 步骤 1：注册服务商元信息（`core/sender/sender.go`）
 
 #### 1.1 添加服务商代码常量
 
-在 `registry.go` 顶部的常量区追加：
+在 `types.go` 顶部的常量区追加：
 
 ```go
 // 服务商代码常量。
@@ -91,12 +91,12 @@ const (
 
 > `SortOrder` 控制列表排序。前端 `webui/src/components/provider/AccountFormDialog.vue` 会读取 `/account/provider-config-fields/{code}`（由 `GetProviderConfigFields` handler 返回 `Meta.ConfigFields`）自动渲染表单，**无需改前端**。
 
-### 步骤 2：实现发送器（新建 `sender/xxx_sms.go`）
+### 步骤 2：实现发送器（新建 `core/sender/xxx_sms.go`）
 
 新文件实现 `Sender` 接口：
 
 ```go
-// Sender 发送器接口（sender/sender.go 定义）。
+// Sender 发送器接口（core/sender/types.go 定义）。
 type Sender interface {
     Send(ctx context.Context, req *SendRequest) (*SendResponse, error)
     GetProviderCode() string
@@ -221,7 +221,7 @@ func (s *XxxSMSSender) Send(ctx context.Context, req *SendRequest) (*SendRespons
 | 配置读取 | 用包内工具 `configMap` / `strVal` / `intVal` / `boolVal`，不要自己解析 `Config` JSON |
 | 超时 | HTTP client 统一 `Timeout: 10 * time.Second` |
 
-### 步骤 3：注册到发送器工厂（`sender/resolver.go`）
+### 步骤 3：注册到发送器工厂（`core/sender/factory.go`）
 
 在 `NewFactory()` 中追加一行：
 
@@ -241,7 +241,7 @@ func NewFactory() *Factory {
 
 ## 三、可选步骤
 
-### 步骤 4：实现回调解析器（`sender/callback_parsers.go`）
+### 步骤 4：实现回调解析器（`core/sender/xxx_sms.go`）
 
 短信服务商通常有回执回调，建议实现 `CallbackParser`，否则回执只能走兜底通用解析（匹配率低）。
 
@@ -311,7 +311,7 @@ func init() {
 
 **回调要点：**
 
-- 成功响应体在 `sender/callback.go` 有现成常量（`AliyunCallbackOK`、`TencentCallbackOK`、`NeteaseCallbackOK`、`GenericCallbackOK`），按服务商要求返回；
+- 成功响应体在 `core/sender/callback.go` 有现成常量（`AliyunCallbackOK`、`TencentCallbackOK`、`NeteaseCallbackOK`、`GenericCallbackOK`），按服务商要求返回；
 - `CallbackResult.ProviderID` 必须与发送响应里的 `ProviderID` 一致，回调逻辑按 `(provider_msg_id + receiver)` 尽力关联到 `PushLog`/`PushTask`；
 - 回调地址：`POST /api/callback/{id}`，`{id}` 是服务商账号 ID（`msg_provider_accounts.id`），把这个地址配到服务商后台的回调 URL；
 - 解析失败时也要返回服务商约定的成功响应，避免服务商重复推送。
@@ -335,7 +335,7 @@ type BatchSender interface {
 
 ### 步骤 6：实现状态查询（`StatusQuerier`）
 
-服务商无回执或回执延迟时，实现该接口可让 `scheduler/status_puller.go` **主动补单**（发送后一段时间无回执主动查服务商真实状态）：
+服务商无回执或回执延迟时，实现该接口可让 `core/scheduler/status_puller.go` **主动补单**（发送后一段时间无回执主动查服务商真实状态）：
 
 ```go
 type StatusQuerier interface {
@@ -388,13 +388,14 @@ func TestXxxSendSuccess(t *testing.T) {
 
 ## 六、最终检查清单
 
-- [ ] `sender/registry.go`：`Code` 常量 + `Meta` 条目（`Type=TypeSMS`），配置字段完整
-- [ ] `sender/xxx_sms.go`：实现 `Sender`，`GetProviderCode()` 与常量一致
-- [ ] `sender/resolver.go`：`NewFactory()` 中 `f.Register(...)`
+- [ ] `core/sender/types.go`：`Code` 常量（`Type=TypeSMS`）
+- [ ] `core/sender/sender.go`：`Meta` 条目，配置字段完整
+- [ ] `core/sender/xxx_sms.go`：实现 `Sender`，`GetProviderCode()` 与常量一致
+- [ ] `core/sender/factory.go`：`NewFactory()` 中 `f.Register(...)`
 - [ ] 手机号用 `smsReceiver(req)` 规范化，不使用裸 `Task.Receiver`
 - [ ] 发送成功回填 `ProviderID`，短信返回 `Status="sending"`
 - [ ] 业务失败返回 `Success=false` + `ErrorCode`/`ErrorMessage`（nil error）
-- [ ] （建议）`callback_parsers.go` 实现并注册 `CallbackParser`，`ProviderID` 与发送侧一致
+- [ ] （建议）`xxx_sms.go` 实现并注册 `CallbackParser`，`ProviderID` 与发送侧一致
 - [ ] （可选）批量/状态查询按需实现
 - [ ] 单测通过，真实链路按「五」验证
 
