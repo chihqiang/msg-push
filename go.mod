@@ -3,7 +3,7 @@ module chihqiang/msg-push
 go 1.25.11
 
 require (
-	github.com/chihqiang/infra-go v0.0.0-20260819053406-16a6d34feac8
+	github.com/chihqiang/infra-go v0.0.0-20260830121801-3be1fcf3e7e1
 	github.com/hibiken/asynq v0.26.0
 	github.com/redis/go-redis/v9 v9.21.0
 	gorm.io/gorm v1.31.2
