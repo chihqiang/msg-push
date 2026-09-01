@@ -22,6 +22,7 @@ type smtpConfig struct {
 	Username   string `json:"username"`
 	Password   string `json:"password"`
 	From       string `json:"from"`
+	FromName   string `json:"from_name"`  // 发件人显示名称（可选）
 	Encryption string `json:"encryption"` // none/starttls/ssl
 }
 
@@ -67,8 +68,14 @@ func (s *SMTPSender) Send(ctx context.Context, req *SendRequest) (*SendResponse,
 		receiver = req.Task.Receiver
 	}
 
+	// From 头部支持显示名称（"名称 <邮箱>"），MAIL FROM 命令仍用纯邮箱地址
+	fromHeader := cfg.From
+	if cfg.FromName != "" {
+		fromHeader = fmt.Sprintf("%s <%s>", cfg.FromName, cfg.From)
+	}
+
 	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: %s\r\n\r\n%s",
-		cfg.From, receiver, subject, contentType, req.RenderedContent)
+		fromHeader, receiver, subject, contentType, req.RenderedContent)
 
 	addr := net.JoinHostPort(cfg.Host, fmt.Sprintf("%d", cfg.Port))
 	if err := sendMail(ctx, addr, cfg, msg); err != nil {

@@ -134,7 +134,7 @@ var providerMetas = []*Meta{
 		ConfigFields: []ConfigField{
 			{Key: "corp_id", Label: "企业ID", Type: "text", Required: true, Placeholder: "企业微信 CorpId"},
 			{Key: "agent_id", Label: "应用AgentId", Type: "number", Required: true, Placeholder: "应用 AgentId"},
-			{Key: "secret", Label: "应用Secret", Type: "password", Required: true, Placeholder: "应用 Secret"},
+			{Key: "agent_secret", Label: "应用Secret", Type: "password", Required: true, Placeholder: "应用 Secret"},
 		},
 	},
 	{
