@@ -63,7 +63,6 @@ var providerMetas = []*Meta{
 		ConfigFields: []ConfigField{
 			{Key: "access_key_id", Label: "AccessKey ID", Type: "text", Required: true, Placeholder: "阿里云 AccessKey ID"},
 			{Key: "access_key_secret", Label: "AccessKey Secret", Type: "password", Required: true, Placeholder: "阿里云 AccessKey Secret"},
-			{Key: "sign_name", Label: "签名", Type: "text", Required: true, Placeholder: "阿里云平台报备的短信签名"},
 		},
 	},
 	{
@@ -80,7 +79,6 @@ var providerMetas = []*Meta{
 			{Key: "secret_id", Label: "SecretId", Type: "text", Required: true, Placeholder: "腾讯云 SecretId"},
 			{Key: "secret_key", Label: "SecretKey", Type: "password", Required: true, Placeholder: "腾讯云 SecretKey"},
 			{Key: "sdk_app_id", Label: "SdkAppId", Type: "text", Required: true, Placeholder: "短信应用 SdkAppId"},
-			{Key: "sign_name", Label: "签名", Type: "text", Required: true, Placeholder: "腾讯云平台报备的短信签名"},
 		},
 	},
 	{
@@ -96,7 +94,10 @@ var providerMetas = []*Meta{
 		ConfigFields: []ConfigField{
 			{Key: "app_key", Label: "AppKey", Type: "text", Required: true, Placeholder: "网易云信 AppKey"},
 			{Key: "app_secret", Label: "AppSecret", Type: "password", Required: true, Placeholder: "网易云信 AppSecret"},
-			{Key: "template_id", Label: "模板ID", Type: "text", Required: false, Placeholder: "如 3057527"},
+			{Key: "send_type", Label: "发送模式", Type: "select", Required: false, DefaultValue: "template", Options: []FieldOption{
+				{Value: "template", Label: "模板短信"},
+				{Value: "code", Label: "验证码短信"},
+			}},
 		},
 	},
 	{
@@ -164,6 +165,10 @@ var providerMetas = []*Meta{
 		Regions:           []string{"cn"},
 		ConfigFields: []ConfigField{
 			{Key: "webhook_url", Label: "Webhook地址", Type: "url", Required: true, Placeholder: "群机器人 Webhook URL"},
+			{Key: "msg_type", Label: "消息类型", Type: "select", Required: false, DefaultValue: "text", Options: []FieldOption{
+				{Value: "text", Label: "文本"},
+				{Value: "markdown", Label: "Markdown"},
+			}},
 		},
 	},
 	{
@@ -179,6 +184,10 @@ var providerMetas = []*Meta{
 		ConfigFields: []ConfigField{
 			{Key: "webhook_url", Label: "Webhook地址", Type: "url", Required: true, Placeholder: "群机器人 Webhook URL"},
 			{Key: "secret", Label: "加签密钥", Type: "password", Required: false, Placeholder: "加签方式密钥(可选)"},
+			{Key: "msg_type", Label: "消息类型", Type: "select", Required: false, DefaultValue: "text", Options: []FieldOption{
+				{Value: "text", Label: "文本"},
+				{Value: "markdown", Label: "Markdown"},
+			}},
 		},
 	},
 }
