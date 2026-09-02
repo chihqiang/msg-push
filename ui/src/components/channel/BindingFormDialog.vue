@@ -23,7 +23,7 @@ const toast = useToastStore()
 const saving = ref(false)
 
 const { data: templates } = useQuery({
-  queryKey: ['channel-available-templates', () => props.channel?.id],
+  queryKey: ['channel-available-templates', props.channel?.id],
   queryFn: () => channelAvailableTemplates(props.channel!.id),
   enabled: () => !!props.open && !!props.channel,
 })

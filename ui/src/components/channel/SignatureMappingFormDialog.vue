@@ -22,7 +22,7 @@ const toast = useToastStore()
 const saving = ref(false)
 
 const { data: signatures } = useQuery({
-  queryKey: ['channel-available-signatures', () => props.channel?.id],
+  queryKey: ['channel-available-signatures', props.channel?.id],
   queryFn: () => channelAvailableSignatures(props.channel!.id),
   enabled: () => !!props.open && !!props.channel,
 })

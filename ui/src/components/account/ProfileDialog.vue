@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 个人中心弹窗：显示当前账号信息 + 修改密码
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { UserRound, ShieldCheck, KeyRound, CalendarDays, Save } from '@lucide/vue'
@@ -49,7 +49,8 @@ watch(
   }
 )
 
-const avatarChar = (profile.value?.name || profile.value?.username || 'A').charAt(0).toUpperCase()
+// 响应式计算头像首字符：profile 为异步加载，必须用 computed 才能随数据更新
+const avatarChar = computed(() => (profile.value?.name || profile.value?.username || 'A').charAt(0).toUpperCase())
 
 async function onSubmit() {
   if (!oldPassword.value || !newPassword.value) {

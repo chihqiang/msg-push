@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import { Loader2, Send, CheckCircle2, XCircle, Hourglass, Blocks, Share2, Server, TrendingUp } from '@lucide/vue'
 import PageToolbar from '@/components/ui/PageToolbar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
-import { getDashboard, getStatistics, getTopApplications, getRecentActivities } from '@/api/statistics'
+import { getDashboard, getStatistics, getRecentActivities } from '@/api/statistics'
 
 const router = useRouter()
 
@@ -15,15 +15,16 @@ const { data: dashboard, isLoading } = useQuery({
   queryFn: getDashboard,
 })
 
-// 统计（近 30 天趋势 + Top）
-const { data: stats } = useQuery({
-  queryKey: ['statistics'],
-  queryFn: () => getStatistics({}),
-})
-
-const { data: topApps } = useQuery({
-  queryKey: ['top-applications'],
-  queryFn: getTopApplications,
+// 趋势图独立请求近 14 天（柱高基准基于展示数据自身）
+const trendDays = 14
+const today = new Date()
+const trendStart = new Date(today)
+trendStart.setDate(today.getDate() - (trendDays - 1))
+const fmtDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const { data: trendStats } = useQuery({
+  queryKey: ['statistics-trend', trendDays],
+  queryFn: () => getStatistics({ start_date: fmtDate(trendStart), end_date: fmtDate(today) }),
 })
 
 const { data: recent } = useQuery({
@@ -87,21 +88,23 @@ const cards = computed(() => {
   ]
 })
 
-// 近 30 天趋势（简化：日柱状条）
+// 近 14 天趋势：柱高基准基于展示数据自身最大值
+const trendData = computed(() => trendStats.value?.daily ?? [])
+
 const maxDaily = computed(() => {
-  const daily = stats.value?.daily ?? []
   let max = 1
-  for (const d of daily) {
+  for (const d of trendData.value) {
     if (d.total_count > max) max = d.total_count
   }
   return max
 })
 
-const trendData = computed(() => {
-  const daily = stats.value?.daily ?? []
-  // 取最近 14 天
-  return daily.slice(-14)
-})
+// 柱高比例：小数据（最大日 < 100）用固定基准，避免全部顶满看不出差异
+const barHeight = (total: number) => {
+  const max = maxDaily.value
+  const base = max < 100 ? 100 : max
+  return `${Math.max(4, Math.round((total / base) * 140))}px`
+}
 
 // 最近动态表格列
 const recentColumns = [
@@ -150,65 +153,28 @@ function goTo(path: string) {
       </div>
     </div>
 
-    <!-- 趋势 + 最近动态 -->
-    <div class="mt-6 grid gap-4 lg:grid-cols-3">
-      <!-- 近 14 天趋势 -->
-      <div class="card p-5 lg:col-span-2">
-        <h3 class="mb-4 text-base font-semibold text-foreground">近 14 天推送趋势</h3>
-        <div v-if="trendData.length === 0" class="py-10 text-center text-sm text-muted-foreground">暂无数据</div>
-        <div v-else class="flex h-48 items-end gap-1.5">
-          <div v-for="day in trendData" :key="day.date" class="group flex flex-1 flex-col items-center">
+    <!-- 近 14 天趋势（整行） -->
+    <div class="mt-6 card p-5">
+      <h3 class="mb-4 text-base font-semibold text-foreground">近 14 天推送趋势</h3>
+      <div v-if="trendData.length === 0" class="py-10 text-center text-sm text-muted-foreground">暂无数据</div>
+      <div v-else class="flex h-48 items-end gap-1.5">
+        <div v-for="day in trendData" :key="day.date" class="group flex flex-1 flex-col items-center">
+          <div class="flex w-full flex-col items-center justify-end rounded-t-sm transition-all" style="min-height: 4px">
             <div
-              class="flex w-full flex-col items-center justify-end rounded-t-sm transition-all"
-              style="min-height: 4px"
-            >
-              <div
-                class="w-full rounded-t-sm bg-gradient-to-t from-cyan-500 to-blue-400 transition-all group-hover:from-cyan-600"
-                :style="{
-                  height: `${Math.max(4, Math.round((day.total_count / maxDaily) * 140))}px`,
-                }"
-                :title="`${day.date}: ${day.total_count} 条`"
-              />
-            </div>
-            <div class="mt-1 text-[10px] text-muted-foreground">{{ day.date.slice(5) }}</div>
+              class="w-full rounded-t-sm bg-gradient-to-t from-cyan-500 to-blue-400 transition-all group-hover:from-cyan-600"
+              :style="{ height: barHeight(day.total_count) }"
+              :title="`${day.date}: ${day.total_count} 条`"
+            />
           </div>
+          <div class="mt-1 text-[10px] text-muted-foreground">{{ day.date.slice(5) }}</div>
         </div>
-      </div>
-
-      <!-- 最近动态 -->
-      <div class="card p-5 lg:col-span-1">
-        <h3 class="mb-3 text-base font-semibold text-foreground">最近动态</h3>
-        <DataTable :columns="recentColumns" :data="recent ?? []" :loading="false" :page-size="10" />
       </div>
     </div>
 
-    <!-- Top 应用 -->
+    <!-- 最近动态（整行，位于趋势下方） -->
     <div class="mt-4 card p-5">
-      <h3 class="mb-3 text-base font-semibold text-foreground">热门应用</h3>
-      <div v-if="!topApps || topApps.length === 0" class="py-6 text-center text-sm text-muted-foreground">
-        暂无应用数据
-      </div>
-      <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="app in topApps" :key="app.id" class="rounded-lg border border-border p-4">
-          <div class="flex items-center justify-between">
-            <div class="min-w-0">
-              <div class="truncate text-sm font-medium text-foreground">{{ app.app_name }}</div>
-              <div class="text-xs text-muted-foreground">{{ app.app_id }}</div>
-            </div>
-          </div>
-          <div class="mt-3 flex items-center gap-4 text-sm">
-            <span class="text-muted-foreground">
-              发送 <span class="font-medium text-foreground">{{ app.push_count }}</span>
-            </span>
-            <span class="text-muted-foreground">
-              成功 <span class="font-medium text-emerald-600">{{ app.success_count }}</span>
-            </span>
-            <span class="ml-auto rounded-full bg-cyan-500/10 px-2 py-0.5 text-xs text-cyan-600">
-              {{ app.success_rate }}
-            </span>
-          </div>
-        </div>
-      </div>
+      <h3 class="mb-3 text-base font-semibold text-foreground">最近动态</h3>
+      <DataTable :columns="recentColumns" :data="recent ?? []" :loading="false" :page-size="10" />
     </div>
   </div>
 </template>

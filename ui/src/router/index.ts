@@ -97,9 +97,15 @@ const router = createRouter({
   routes,
 })
 
-// 认证守卫：未登录跳登录页
+// 认证守卫：登录态处理 + 未登录跳登录页
 router.beforeEach((to) => {
   const auth = useAuthStore()
+
+  // 清理已过期的登录态：cookie 里有 token 但已过期时清空，避免残留过期登录态
+  if (auth.accessToken && !auth.isLoggedIn) {
+    auth.logout()
+  }
+
   if (to.meta.public) return true
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { path: '/auth', query: { redirect: to.fullPath } }

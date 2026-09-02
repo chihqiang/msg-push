@@ -121,8 +121,11 @@ const batchColumns = [
 
     <!-- 搜索 -->
     <div class="mb-4 flex flex-wrap items-center gap-2">
-      <input v-model="taskNo" type="text" placeholder="任务编号" class="h-9 w-48 rounded-md border border-input bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-      <input v-model="requestId" type="text" placeholder="追踪ID (request_id)" class="h-9 w-56 rounded-md border border-input bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+      <!-- 任务 Tab：按任务编号/追踪ID 搜索；批量 Tab 不支持这两项，隐藏避免误导 -->
+      <template v-if="tab === 'tasks'">
+        <input v-model="taskNo" type="text" placeholder="任务编号" class="h-9 w-48 rounded-md border border-input bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+        <input v-model="requestId" type="text" placeholder="追踪ID (request_id)" class="h-9 w-56 rounded-md border border-input bg-card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+      </template>
       <button class="h-9 rounded-md border border-border px-4 text-sm text-muted-foreground hover:bg-muted" @click="page = 1">查询</button>
     </div>
 

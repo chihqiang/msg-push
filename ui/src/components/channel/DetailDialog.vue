@@ -52,17 +52,19 @@ const { data: sigMappingsData, refetch: refetchSigs } = useQuery({
 })
 
 // 打开时刷新数据：用 nextTick 替代 setTimeout，避免魔法数字时序
-watch(
-  () => props.open,
-  async (open) => {
-    if (!open || !props.channel) return
-    detailTab.value = 'health'
-    await nextTick()
-    refetchHealth()
-    refetchBindings()
-    refetchSigs()
-  }
-)
+// 打开时刷新数据：监听 open 与 channel.id（连续切换不同通道时 detailOpen 保持 true，
+// 仅监听 open 不会触发；加 channel.id 保证换通道后重新加载）
+async function loadChannelData() {
+  if (!props.channel) return
+  detailTab.value = 'health'
+  await nextTick()
+  refetchHealth()
+  refetchBindings()
+  refetchSigs()
+}
+
+watch(() => props.open, (open) => { if (open) loadChannelData() })
+watch(() => props.channel?.id, () => { if (props.open) loadChannelData() })
 
 // 测试发送
 const testReceiver = ref('')

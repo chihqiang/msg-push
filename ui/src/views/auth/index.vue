@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { MessageSquareText, Loader2 } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -22,7 +23,9 @@ async function onSubmit() {
   try {
     await auth.login(username.value, password.value)
     toast.success('登录成功')
-    router.push('/dashboard')
+    // 跳回登录前想访问的页面（如 /apps?action=create），否则回首页
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
+    router.push(redirect)
   } catch (e) {
     const message = e instanceof Error ? e.message : '登录失败'
     toast.error(message)
