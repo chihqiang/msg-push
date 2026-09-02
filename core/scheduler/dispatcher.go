@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"chihqiang/msg-push/model"
@@ -21,9 +22,10 @@ import (
 
 // Dispatcher 配置。
 const (
-	dispatcherInterval  = time.Second      // 轮询间隔
-	dispatcherBatch     = 100              // 每批处理数
-	dispatcherLeaseBase = 10 * time.Second // 认领租约基础时长
+	dispatcherInterval       = time.Second      // 轮询间隔
+	dispatcherBatch          = 100              // 每批处理数
+	dispatcherLeaseBase      = 10 * time.Second // 认领租约基础时长
+	dispatcherMaxConcurrency = 50               // 最大并发投递数（信号量上限）
 )
 
 // dispatcherHTTPClient Webhook 投递共用 HTTP 客户端（复用连接池）。
@@ -34,13 +36,20 @@ var dispatcherHTTPClient = &http.Client{}
 // 轮询 pending/processing 到期日志 → CAS 认领 → 并发投递 → 成功置终态，失败退避重试。
 type Dispatcher struct {
 	svc    *svc.ServiceContext
+	sem    chan struct{}  // 并发投递信号量，防止 webhook 慢时 goroutine 无限堆积
+	wg     sync.WaitGroup // 跟踪在途投递协程，优雅停止时等待其完成
 	stopCh chan struct{}
 	doneCh chan struct{}
 }
 
 // NewDispatcher 创建投递器。
 func NewDispatcher(s *svc.ServiceContext) *Dispatcher {
-	return &Dispatcher{svc: s, stopCh: make(chan struct{}), doneCh: make(chan struct{})}
+	return &Dispatcher{
+		svc:    s,
+		sem:    make(chan struct{}, dispatcherMaxConcurrency),
+		stopCh: make(chan struct{}),
+		doneCh: make(chan struct{}),
+	}
 }
 
 // Start 启动投递器（非阻塞，后台轮询）。
@@ -48,10 +57,12 @@ func (d *Dispatcher) Start() {
 	go d.run()
 }
 
-// Stop 优雅停止。
+// Stop 优雅停止。等待调度循环退出后再等待在途投递完成，
+// 避免强制退出导致已认领（processing + 租约未到期）的日志悬挂。
 func (d *Dispatcher) Stop() {
 	close(d.stopCh)
 	<-d.doneCh
+	d.wg.Wait()
 }
 
 // StartService 适配 service.Starter。
@@ -80,7 +91,6 @@ func (d *Dispatcher) dispatchOnce() {
 	defer cancel()
 
 	now := time.Now()
-	lease := leaseDuration(0)
 	var due []model.WebhookLog
 	err := d.svc.DB.WithContext(ctx).
 		Where("(status = ? AND next_attempt_at <= ?) OR (status = ? AND locked_until <= ?)",
@@ -96,12 +106,24 @@ func (d *Dispatcher) dispatchOnce() {
 
 	for i := range due {
 		logEntry := &due[i]
-		// CAS 认领
-		claimed, token := d.claim(ctx, logEntry, lease)
+		// CAS 认领：租约基于该日志配置的超时时间，确保租约覆盖投递耗时，
+		// 避免 Timeout > 租约时长时被下轮重复认领导致同一 webhook 并发重复投递。
+		claimed, token := d.claim(ctx, logEntry, leaseDuration(logEntry.TimeoutSeconds))
 		if !claimed {
 			continue
 		}
-		go d.send(ctx, logEntry, token)
+		// 并发限流：信号量满则跳过本批剩余（已认领日志会在租约到期后下轮重新扫描）
+		select {
+		case d.sem <- struct{}{}:
+		default:
+			continue
+		}
+		d.wg.Add(1)
+		go func() {
+			defer func() { <-d.sem }()
+			defer d.wg.Done()
+			d.send(ctx, logEntry, token)
+		}()
 	}
 }
 

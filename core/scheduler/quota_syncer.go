@@ -75,7 +75,7 @@ func (s *QuotaSyncer) syncOnce() {
 	}
 	defer s.svc.Redis.Client().Del(context.Background(), s.lockKey)
 
-	now := time.Now()
+	now := time.Now().In(s.location())
 	todayStart := businessDayStart(now)
 	tomorrowStart := todayStart.AddDate(0, 0, 1)
 
@@ -170,7 +170,18 @@ func (s *QuotaSyncer) syncProviderQuota(ctx context.Context, start, end time.Tim
 	}
 }
 
-// businessDayStart 返回今天零点（本地时区）。
+// location 返回业务统计时区（配置的 IANA 时区，无效或未配置则用服务器本地时区）。
+// 业务日按该时区计算，保证多实例/跨时区部署时统计口径一致。
+func (s *QuotaSyncer) location() *time.Location {
+	if tz := s.svc.Config.Scheduler.BusinessTimezone; tz != "" {
+		if loc, err := time.LoadLocation(tz); err == nil {
+			return loc
+		}
+	}
+	return time.Local
+}
+
+// businessDayStart 返回今天零点（按传入 now 的时区）。
 func businessDayStart(now time.Time) time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 }

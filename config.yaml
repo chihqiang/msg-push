@@ -49,6 +49,15 @@ taskq:
   default_timeout: 30m
   default_queue: default
 
+# 后台调度配置（可选，留空用默认值）
+scheduler:
+  # 短信发送后多久未收到回执视为回调超时（服务商回执慢时建议调大）
+  sms_callback_timeout: 60s
+  # 回调超时后再等多久仍无回执则转 failed 终态
+  sms_hard_timeout: 10m
+  # 业务统计时区（IANA 名，如 Asia/Shanghai）；留空用服务器本地时区
+  business_timezone: ""
+
 # 账号种子（仅首次建库时创建）
 account_seed:
   username: admin

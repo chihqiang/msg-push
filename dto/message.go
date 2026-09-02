@@ -23,10 +23,11 @@ type SendRequest struct {
 
 // BatchSendRequest 批量发送请求。
 // ChannelCode 与 TemplateCode 至少传一个，规则同单条发送。
+// Receivers 上限 1000：防止单条请求创建海量任务、绕过每日配额（配额按接收者数扣减）。
 type BatchSendRequest struct {
 	ChannelCode    string            `json:"channel_code" binding:"omitempty"`
 	TemplateCode   string            `json:"template_code"`
-	Receivers      []string          `json:"receivers" binding:"required,min=1"`
+	Receivers      []string          `json:"receivers" binding:"required,min=1,max=1000"`
 	TemplateParams map[string]string `json:"template_params"`
 	SignatureName  string            `json:"signature_name" binding:"omitempty,max=200"`
 	ScheduledAt    *time.Time        `json:"scheduled_at"`

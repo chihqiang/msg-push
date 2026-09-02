@@ -31,11 +31,20 @@ type SMSTimeoutScanner struct {
 
 // NewSMSTimeoutScanner 创建扫描器。
 func NewSMSTimeoutScanner(s *svc.ServiceContext) *SMSTimeoutScanner {
+	// 超时阈值可从配置覆盖（生产可调大，避免服务商回执慢时过早误判）
+	callbackTimeout := 60 * time.Second
+	if v := s.Config.Scheduler.SMSCallbackTimeout; v > 0 {
+		callbackTimeout = v
+	}
+	hardTimeout := 10 * time.Minute
+	if v := s.Config.Scheduler.SMSHardTimeout; v > 0 {
+		hardTimeout = v
+	}
 	return &SMSTimeoutScanner{
 		svc:             s,
 		interval:        10 * time.Second,
-		callbackTimeout: 60 * time.Second,
-		hardTimeout:     10 * time.Minute,
+		callbackTimeout: callbackTimeout,
+		hardTimeout:     hardTimeout,
 		limit:           100,
 		stopCh:          make(chan struct{}),
 		doneCh:          make(chan struct{}),

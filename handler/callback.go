@@ -67,6 +67,7 @@ func (h *CallbackHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// 打印完整 body，便于排查服务商回调问题（含手机号等接收方信息）
 	logger.Infof("callback received: account_id=%d method=%s body=%s",
 		id, r.Method, string(rawBody))
 

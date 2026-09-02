@@ -36,32 +36,40 @@ func quotaKey(appID uint, now time.Time) string {
 // Check 原子校验并计数：未超过 dailyLimit 时计数 +1 并返回 true，超限返回 false。
 // dailyLimit <= 0 表示不限制，直接放行。
 func (l *QuotaLogic) Check(ctx context.Context, appID uint, dailyLimit int) (bool, error) {
-	if dailyLimit <= 0 {
+	return l.CheckN(ctx, appID, dailyLimit, 1)
+}
+
+// CheckN 原子校验并一次性扣减 count 条配额：未超过 dailyLimit 时计数 +count 并返回 true，
+// 否则返回 false。用于批量发送按接收者数量精确扣减，避免一条批量请求绕过每日配额。
+// dailyLimit <= 0 表示不限制；count <= 0 直接放行。
+func (l *QuotaLogic) CheckN(ctx context.Context, appID uint, dailyLimit, count int) (bool, error) {
+	if dailyLimit <= 0 || count <= 0 {
 		return true, nil
 	}
 	key := quotaKey(appID, time.Now())
 
-	// Lua 原子脚本：不存在则置 1 并设 TTL；未超限则 INCR；否则返回 0
+	// Lua 原子脚本：不存在则置 count 并设 TTL；未超限则 INCRBY；否则返回 0
 	script := `
 		local key = KEYS[1]
 		local limit = tonumber(ARGV[1])
-		local ttl = tonumber(ARGV[2])
+		local n = tonumber(ARGV[2])
+		local ttl = tonumber(ARGV[3])
 
 		local current = redis.call('GET', key)
 		if current == false then
-			redis.call('SET', key, 1, 'EX', ttl)
+			if n > limit then return 0 end
+			redis.call('SET', key, n, 'EX', ttl)
 			return 1
 		end
 
 		current = tonumber(current)
-		if current < limit then
-			redis.call('INCR', key)
-			return 1
+		if current + n > limit then
+			return 0
 		end
-
-		return 0
+		redis.call('INCRBY', key, n)
+		return 1
 	`
-	result, err := l.svc.Redis.Client().Eval(ctx, script, []string{key}, dailyLimit, quotaTTL).Result()
+	result, err := l.svc.Redis.Client().Eval(ctx, script, []string{key}, dailyLimit, count, quotaTTL).Result()
 	if err != nil {
 		return false, err
 	}

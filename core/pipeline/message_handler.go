@@ -69,10 +69,15 @@ func (h *MessageHandler) Handle(ctx context.Context, taskID string) error {
 	}
 
 	// 2. CAS 抢占：pending→sending（at-least-once 下重复消息直接跳过）
-	claimed := h.svc.DB.WithContext(ctx).Model(&model.PushTask{}).
+	// 必须检查 Error：DB 瞬时故障时 RowsAffected=0 会被误判为"重复任务"而直接跳过，
+	// 导致任务永久滞留 pending。出错时返回 err 触发 asynq 重试。
+	casRes := h.svc.DB.WithContext(ctx).Model(&model.PushTask{}).
 		Where("task_id = ? AND status = ?", taskID, string(model.PushTaskStatusPending)).
-		Update("status", string(model.PushTaskStatusSending)).RowsAffected
-	if claimed == 0 {
+		Update("status", string(model.PushTaskStatusSending))
+	if casRes.Error != nil {
+		return fmt.Errorf("cas claim task %s: %w", taskID, casRes.Error)
+	}
+	if casRes.RowsAffected == 0 {
 		logger.Infof("skip duplicate task %s (not pending)", taskID)
 		return nil
 	}
