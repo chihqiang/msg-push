@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"chihqiang/msg-push/core/common"
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/logic"
 	"chihqiang/msg-push/svc"
@@ -23,11 +24,7 @@ func NewChannelBindingHandler(s *svc.ServiceContext) *ChannelBindingHandler {
 
 // channelIDFromPath 解析通道 ID。
 func channelIDFromPath(r *http.Request) (uint, bool) {
-	channelID, err := parseID(r)
-	if err != nil {
-		return 0, false
-	}
-	return channelID, true
+	return common.ChannelIDFromPath(r)
 }
 
 // Create 创建绑定。

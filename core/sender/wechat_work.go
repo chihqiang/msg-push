@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -160,21 +158,4 @@ func (s *WeChatWorkSender) Send(ctx context.Context, req *SendRequest) (*SendRes
 		Success: false, TaskID: taskID, ErrorCode: fmt.Sprintf("%d", resp.Errcode),
 		ErrorMessage: resp.Errmsg, RequestData: string(body), ResponseData: responseData,
 	}, nil
-}
-
-// httpGet HTTP GET 辅助。
-func httpGet(ctx context.Context, url string, timeout time.Duration) ([]byte, int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, 0, err
-	}
-	client := &http.Client{Timeout: timeout, Transport: senderTransport}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer resp.Body.Close()
-	buf := new(strings.Builder)
-	_, _ = copyBuffer(buf, resp.Body)
-	return []byte(buf.String()), resp.StatusCode, nil
 }

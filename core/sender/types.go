@@ -9,21 +9,15 @@
 package sender
 
 import (
-	"bytes"
 	"context"
-	"crypto/rand"
 	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"io"
-	"net"
-	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"chihqiang/msg-push/model"
 )
@@ -240,49 +234,12 @@ func boolVal(cfg map[string]any, key string) bool {
 
 // ==================== 工具函数：HTTP ====================
 
-// senderTransport 共享 HTTP Transport（连接池），供各发送器复用。
-// 复用 TCP 连接减少握手开销；整体超时由每次请求的 ctx 或 client.Timeout 控制。
-var senderTransport = &http.Transport{
-	MaxIdleConns:        100,
-	MaxIdleConnsPerHost: 16,
-	IdleConnTimeout:     90 * time.Second,
-	TLSHandshakeTimeout: 10 * time.Second,
-	DialContext:         (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
-}
-
-// httpPost HTTP POST 辅助（JSON 请求体）。
-func httpPost(ctx context.Context, url string, body []byte, timeout time.Duration) ([]byte, int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, 0, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{Timeout: timeout, Transport: senderTransport}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-	_, _ = buf.ReadFrom(resp.Body)
-	return buf.Bytes(), resp.StatusCode, nil
-}
-
 // copyBuffer 从 reader 拷贝到 writer。
 func copyBuffer(w io.Writer, r io.Reader) (int64, error) {
 	return io.Copy(w, r)
 }
 
 // ==================== 工具函数：JSON ====================
-
-// jsonDump 序列化调试数据。
-func jsonDump(v any) string {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "{}"
-	}
-	return string(b)
-}
 
 // rawToAny 将 json.RawMessage 转为 any（宽松解析字符串/数字）。
 func rawToAny(raw json.RawMessage) any {
@@ -296,55 +253,13 @@ func rawToAny(raw json.RawMessage) any {
 	return v
 }
 
-// ==================== 工具函数：加密/随机 ====================
-
-// randomHex 生成 n 字节随机数的 hex 字符串。
-func randomHex(n int) string {
-	b := make([]byte, n)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
-}
+// ==================== 工具函数：加密 ====================
 
 // sha1Sum 计算 SHA1 摘要。
 func sha1Sum(b []byte) []byte {
 	h := sha1.New()
 	_, _ = h.Write(b)
 	return h.Sum(nil)
-}
-
-// ==================== 工具函数：字符串 ====================
-
-// cnMobileRe 中国大陆手机号正则。
-var cnMobileRe = regexp.MustCompile(`^1[3-9]\d{9}$`)
-
-// isAllDigits 是否全数字。
-func isAllDigits(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
-}
-
-// truncateUTF8Bytes 按 UTF-8 字节安全截断（不切断多字节字符）。
-func truncateUTF8Bytes(s string, maxBytes int) string {
-	if maxBytes <= 0 {
-		return ""
-	}
-	if len(s) <= maxBytes {
-		return s
-	}
-	b := []byte(s)
-	cut := b[:maxBytes]
-	// 回退到最后一个完整 UTF-8 字符边界
-	for len(cut) > 0 && !utf8.Valid(cut) {
-		cut = cut[:len(cut)-1]
-	}
-	return string(cut)
 }
 
 // ==================== 工具函数：模板 ====================

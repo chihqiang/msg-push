@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"chihqiang/msg-push/core/common"
 	"chihqiang/msg-push/core/sender"
 	"chihqiang/msg-push/logic"
 	"chihqiang/msg-push/model"
@@ -439,7 +440,7 @@ func (h *MessageHandler) writeLog(ctx context.Context, task *model.PushTask, pro
 //   - 国际号码（E.164 形式 + 或 00 开头，或已带国家码）：region=空, national=空, e164=规范化号码
 //   - 其他：全部返回空
 func parseCNMobile(receiver string) (region, national, e164 string) {
-	if cnMobileRe.MatchString(receiver) {
+	if common.CNMobileRe.MatchString(receiver) {
 		return "CN", receiver, "+86" + receiver
 	}
 	// 国际号码规范化：支持 +86138...、0086138...、86138... 等常见形式
@@ -463,18 +464,8 @@ func normalizeE164(receiver string) string {
 	}
 	// 去除空格/短横线/括号等分隔符
 	s = strings.NewReplacer(" ", "", "-", "", "(", "", ")", "").Replace(s)
-	if len(s) < 8 || len(s) > 15 || !allDigits(s) {
+	if len(s) < 8 || len(s) > 15 || !common.IsAllDigits(s) {
 		return ""
 	}
 	return "+" + s
-}
-
-// allDigits 是否全部为数字字符。
-func allDigits(s string) bool {
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
 }

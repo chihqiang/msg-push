@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"chihqiang/msg-push/core/common"
 	"chihqiang/msg-push/model"
 	"chihqiang/msg-push/svc"
 
@@ -174,7 +175,7 @@ func (d *Dispatcher) send(ctx context.Context, logEntry *model.WebhookLog, token
 			Updates(map[string]any{
 				"status":          string(model.WebhookLogSuccess),
 				"response_status": statusCode,
-				"response_data":   truncate(string(respBody), 1<<20),
+				"response_data":   common.TruncateUTF8(string(respBody), 1<<20),
 				"error_message":   "",
 				"locked_until":    nil,
 				"lease_token":     "",
@@ -194,15 +195,15 @@ func (d *Dispatcher) send(ctx context.Context, logEntry *model.WebhookLog, token
 
 	// 失败：若重试未超限则退避重试，否则置失败
 	if logEntry.RetryCount < logEntry.MaxRetries {
-		nextAttempt := time.Now().Add(backoffDelay(logEntry.RetryCount))
+		nextAttempt := time.Now().Add(common.LinearBackoff(logEntry.RetryCount))
 		_ = d.svc.DB.WithContext(dbCtx).Model(&model.WebhookLog{}).
 			Where("id = ? AND lease_token = ?", logEntry.ID, token).
 			Updates(map[string]any{
 				"status":          string(model.WebhookLogPending),
 				"retry_count":     logEntry.RetryCount + 1,
 				"response_status": statusCode,
-				"response_data":   truncate(string(respBody), 1<<20),
-				"error_message":   truncate(errMsg, 1024),
+				"response_data":   common.TruncateUTF8(string(respBody), 1<<20),
+				"error_message":   common.TruncateUTF8(errMsg, 1024),
 				"next_attempt_at": nextAttempt,
 				"locked_until":    nil,
 				"lease_token":     "",
@@ -218,8 +219,8 @@ func (d *Dispatcher) send(ctx context.Context, logEntry *model.WebhookLog, token
 		Updates(map[string]any{
 			"status":          string(model.WebhookLogFailed),
 			"response_status": statusCode,
-			"response_data":   truncate(string(respBody), 1<<20),
-			"error_message":   truncate(errMsg, 1024),
+			"response_data":   common.TruncateUTF8(string(respBody), 1<<20),
+			"error_message":   common.TruncateUTF8(errMsg, 1024),
 			"locked_until":    nil,
 			"lease_token":     "",
 			"updated_at":      time.Now(),
@@ -262,15 +263,6 @@ func webhookSignature(body []byte, secret string, timestamp int64) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-// backoffDelay 退避延迟：线性增长（第 n 次重试延迟 n 秒）。
-func backoffDelay(retryCount int) time.Duration {
-	seconds := retryCount + 1
-	if seconds > 60 {
-		seconds = 60
-	}
-	return time.Duration(seconds) * time.Second
-}
-
 // leaseDuration 认领租约时长（基于超时时间）。
 func leaseDuration(timeoutSeconds int) time.Duration {
 	lease := dispatcherLeaseBase + time.Duration(timeoutSeconds)*time.Second
@@ -285,12 +277,4 @@ func randomToken() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
-}
-
-// truncate 截断字节（不切断 UTF-8 多字节字符）。
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return string([]byte(s)[:max])
 }

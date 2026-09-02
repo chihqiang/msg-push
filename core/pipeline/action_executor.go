@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"chihqiang/msg-push/core/common"
 	"chihqiang/msg-push/logic"
 	"chihqiang/msg-push/model"
 	"chihqiang/msg-push/svc"
@@ -61,7 +62,7 @@ type asynqEnqueuer struct{ s *svc.ServiceContext }
 func (e *asynqEnqueuer) Enqueue(ctx context.Context, task *model.PushTask, scheduledAt *time.Time) error {
 	params := map[string]string{}
 	if task.Params != "" {
-		_ = jsonUnmarshal(task.Params, &params)
+		_ = common.UnmarshalJSONString(task.Params, &params)
 	}
 	_, err := logic.EnqueueSendMessage(ctx, e.s.Producer, logic.SendMessagePayload{
 		TaskID:     task.TaskID,
@@ -252,11 +253,11 @@ func (e *ActionExecutor) sendAlert(ctx context.Context, cfg *model.AlertActionCo
 		"error_message": execCtx.ErrorMessage,
 		"timestamp":     time.Now().Format(time.RFC3339),
 	}
-	body := jsonMarshal(payload)
+	body := common.MarshalJSON(payload)
 	if len(body) == 0 {
 		return
 	}
-	_, _, _ = httpPost(ctx, webhookURL, body, 10*time.Second)
+	_, _, _ = common.PostJSON(ctx, webhookURL, body, 10*time.Second)
 }
 
 // backoffDelay 指数退避延迟。
