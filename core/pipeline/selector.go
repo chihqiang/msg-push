@@ -268,7 +268,8 @@ func (s *ChannelSelector) ReportSuccess(providerAccountID uint) {
 	if providerAccountID == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	_ = s.svc.Redis.Client().Del(ctx, failCountKey(providerAccountID)).Err()
 }
 
@@ -277,7 +278,8 @@ func (s *ChannelSelector) ReportFailure(providerAccountID uint) {
 	if providerAccountID == 0 {
 		return
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	key := failCountKey(providerAccountID)
 	count, err := s.svc.Redis.Client().Incr(ctx, key).Result()
 	if err != nil {

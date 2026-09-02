@@ -16,6 +16,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"regexp"
 	"sort"
@@ -239,6 +240,16 @@ func boolVal(cfg map[string]any, key string) bool {
 
 // ==================== 工具函数：HTTP ====================
 
+// senderTransport 共享 HTTP Transport（连接池），供各发送器复用。
+// 复用 TCP 连接减少握手开销；整体超时由每次请求的 ctx 或 client.Timeout 控制。
+var senderTransport = &http.Transport{
+	MaxIdleConns:        100,
+	MaxIdleConnsPerHost: 16,
+	IdleConnTimeout:     90 * time.Second,
+	TLSHandshakeTimeout: 10 * time.Second,
+	DialContext:         (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
+}
+
 // httpPost HTTP POST 辅助（JSON 请求体）。
 func httpPost(ctx context.Context, url string, body []byte, timeout time.Duration) ([]byte, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
@@ -246,7 +257,7 @@ func httpPost(ctx context.Context, url string, body []byte, timeout time.Duratio
 		return nil, 0, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{Timeout: timeout}
+	client := &http.Client{Timeout: timeout, Transport: senderTransport}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, 0, err

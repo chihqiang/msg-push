@@ -26,6 +26,10 @@ const (
 	dispatcherLeaseBase = 10 * time.Second // 认领租约基础时长
 )
 
+// dispatcherHTTPClient Webhook 投递共用 HTTP 客户端（复用连接池）。
+// 无固定 Timeout：整体超时由 send 依据 WebhookConfig.Timeout 设置的 ctx 控制。
+var dispatcherHTTPClient = &http.Client{}
+
 // Dispatcher Webhook 异步投递器（outbox 模式）。
 // 轮询 pending/processing 到期日志 → CAS 认领 → 并发投递 → 成功置终态，失败退避重试。
 type Dispatcher struct {
@@ -202,6 +206,8 @@ func (d *Dispatcher) send(ctx context.Context, logEntry *model.WebhookLog, token
 }
 
 // doPost 执行 HTTP POST 并携带签名头。
+// 客户端超时受 ctx 控制（由 send 按 WebhookConfig.Timeout 设置），故用超时上下文而非
+// 固定 client.Timeout，使 Webhook 配置的超时值真正生效。
 func (d *Dispatcher) doPost(ctx context.Context, logEntry *model.WebhookLog, attemptTime time.Time) (int, []byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, logEntry.WebhookURL, bytes.NewReader([]byte(logEntry.RequestData)))
 	if err != nil {
@@ -216,8 +222,8 @@ func (d *Dispatcher) doPost(ctx context.Context, logEntry *model.WebhookLog, att
 		req.Header.Set("X-Webhook-Signature", webhookSignature([]byte(logEntry.RequestData), logEntry.SigningSecret, attemptTime.Unix()))
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	// 复用全局连接池客户端；整体超时由 ctx（含 WebhookConfig.Timeout）控制
+	resp, err := dispatcherHTTPClient.Do(req)
 	if err != nil {
 		return 0, nil, err
 	}

@@ -101,7 +101,7 @@ func (s *NeteaseSMSSender) Send(ctx context.Context, req *SendRequest) (*SendRes
 	httpReq.Header.Set("CurTime", curTime)
 	httpReq.Header.Set("CheckSum", checkSum)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return &SendResponse{Success: false, TaskID: taskID, ErrorMessage: err.Error(), ErrorCode: "HTTP_ERROR", RequestData: form.Encode()}, nil
@@ -246,7 +246,7 @@ func (s *NeteaseSMSSender) neteaseSendCodeOne(ctx context.Context, appKey, appSe
 	httpReq.Header.Set("CurTime", curTime)
 	httpReq.Header.Set("CheckSum", checkSum)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return &SendResponse{Success: false, TaskID: task.TaskID, ErrorMessage: err.Error(), ErrorCode: "HTTP_ERROR", RequestData: requestData}
@@ -301,7 +301,7 @@ func (s *NeteaseSMSSender) neteaseSendTemplateChunk(ctx context.Context, appKey,
 	httpReq.Header.Set("CurTime", curTime)
 	httpReq.Header.Set("CheckSum", checkSum)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return s.neteaseFailAll(tasks, err.Error(), "HTTP_ERROR")

@@ -168,7 +168,7 @@ func httpGet(ctx context.Context, url string, timeout time.Duration) ([]byte, in
 	if err != nil {
 		return nil, 0, err
 	}
-	client := &http.Client{Timeout: timeout}
+	client := &http.Client{Timeout: timeout, Transport: senderTransport}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, 0, err

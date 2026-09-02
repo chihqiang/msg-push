@@ -88,7 +88,7 @@ func (s *TencentSMSSender) Send(ctx context.Context, req *SendRequest) (*SendRes
 	httpReq.Header.Set("X-TC-Region", region)
 	httpReq.Header.Set("Authorization", authorization)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return &SendResponse{Success: false, TaskID: taskID, ErrorMessage: err.Error(), ErrorCode: "HTTP_ERROR", RequestData: string(payloadBytes)}, nil
@@ -190,7 +190,7 @@ func (s *TencentSMSSender) QueryStatus(ctx context.Context, req *StatusQueryRequ
 	httpReq.Header.Set("X-TC-Region", region)
 	httpReq.Header.Set("Authorization", authorization)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, err

@@ -131,13 +131,13 @@ func (l *MessageLogic) BatchSend(ctx context.Context, app *model.Application, re
 	requestID := httpx.RequestIDFromContext(ctx)
 
 	// 为每个接收者创建任务（暂不入队，由 msg:batch 聚合投递）
+	// 参数序列化提前到循环外，避免每个接收者重复序列化
+	params, perr := marshalParams(req.TemplateParams)
+	if perr != nil {
+		logger.Warnf("batch send params failed: %v", perr)
+	}
 	created := 0
 	for _, receiver := range req.Receivers {
-		params, perr := marshalParams(req.TemplateParams)
-		if perr != nil {
-			logger.Warnf("batch send to %s params failed: %v", receiver, perr)
-			continue
-		}
 		task := model.PushTask{
 			TaskID:      "task_" + stringx.RandId(),
 			RequestID:   requestID,
@@ -163,8 +163,8 @@ func (l *MessageLogic) BatchSend(ctx context.Context, app *model.Application, re
 	success := 0
 	failed := total - created
 	if created > 0 {
-		// 整批入队一条 msg:batch
-		if _, err := EnqueueSendBatchMessage(ctx, l.svc.Producer, SendBatchMessagePayload{BatchID: batchID, RequestID: requestID}); err != nil {
+		// 整批入队一条 msg:batch（scheduledAt 非空时按计划时间到点整批触发）
+		if _, err := EnqueueSendBatchMessage(ctx, l.svc.Producer, SendBatchMessagePayload{BatchID: batchID, RequestID: requestID}, req.ScheduledAt); err != nil {
 			logger.Errorf("enqueue batch %s failed: %v", batchID, err)
 			// 入队失败：批次下所有任务标记失败，避免永久滞留
 			_ = l.svc.DB.WithContext(ctx).Model(&model.PushTask{}).

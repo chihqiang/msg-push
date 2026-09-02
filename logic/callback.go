@@ -122,6 +122,14 @@ func (l *CallbackLogic) parseForProvider(ctx context.Context, account *model.Pro
 
 // processResult 处理单个解析结果：落库 + 关联 + 通知。
 func (l *CallbackLogic) processResult(ctx context.Context, account *model.ProviderAccount, req *CallbackRequest, pc *parsedCallback) {
+	// 幂等去重：同一服务商账号+消息ID+手机号+状态的回执已处理过（多为服务商网络重试
+	// 重复推送），直接跳过，避免重复落库、重复关联与重复 webhook 通知。
+	if l.isDuplicate(ctx, account.ID, pc) {
+		logger.Infof("callback: duplicate receipt skipped account_id=%d provider_id=%s mobile=%s status=%s",
+			account.ID, pc.ProviderID, pc.Mobile, pc.Status)
+		return
+	}
+
 	// 落库回调日志
 	log := &model.CallbackLog{
 		Type:              model.CallbackType(pc.Type),
@@ -147,6 +155,27 @@ func (l *CallbackLogic) processResult(ctx context.Context, account *model.Provid
 
 	// 触发 webhook 通知
 	l.notifyWebhook(ctx, account, taskNo, log, pc)
+}
+
+// isDuplicate 判断回执是否已处理过（幂等去重）。
+// 判定键：provider_account_id + provider_id + mobile + callback_status。
+func (l *CallbackLogic) isDuplicate(ctx context.Context, accountID uint, pc *parsedCallback) bool {
+	if pc.ProviderID == "" {
+		return false // 无消息ID无法判定，放行
+	}
+	q := l.svc.DB.WithContext(ctx).Model(&model.CallbackLog{}).
+		Where("provider_account_id = ? AND provider_id = ?", accountID, pc.ProviderID)
+	if pc.Mobile != "" {
+		q = q.Where("mobile = ?", pc.Mobile)
+	}
+	if pc.Status != "" {
+		q = q.Where("callback_status = ?", pc.Status)
+	}
+	var count int64
+	if err := q.Count(&count).Error; err != nil {
+		return false // 查询异常放行，不阻塞正常回执
+	}
+	return count > 0
 }
 
 // resolveTask 尽力关联 push_log（按 provider_msg_id + 手机号），更新状态并回填 task_no。
@@ -208,21 +237,30 @@ func (l *CallbackLogic) resolveTask(ctx context.Context, account *model.Provider
 					"error_msg":  pc.ErrorMessage,
 				}).Error
 		}
-		// 同步更新 push_task 状态（补齐回执状态与时间，与主动拉取/超时扫描口径一致）
+		// 同步更新 push_task 状态（补齐回执状态与时间，与主动拉取/超时扫描口径一致）。
+		// CAS 保护：仅非终态任务可流转，避免迟到的回执覆盖已终态任务（如成功后被失败回执覆盖）。
 		now := time.Now()
 		callbackStatus := "success"
 		if newStatus == string(model.PushTaskStatusFailed) {
 			callbackStatus = "failed"
 		}
-		_ = l.svc.DB.WithContext(ctx).Model(&model.PushTask{}).
-			Where("task_id = ?", pushLog.TaskNo).
+		res := l.svc.DB.WithContext(ctx).Model(&model.PushTask{}).
+			Where("task_id = ? AND status NOT IN ?", pushLog.TaskNo, []string{
+				string(model.PushTaskStatusSuccess),
+				string(model.PushTaskStatusFailed),
+			}).
 			Updates(map[string]any{
 				"status":          newStatus,
 				"callback_status": callbackStatus,
 				"callback_time":   now,
 				"error_msg":       pc.ErrorMessage,
 				"updated_at":      now,
-			}).Error
+			})
+		if res.Error != nil {
+			logger.Warnf("callback: update push_task %s failed: %v", pushLog.TaskNo, res.Error)
+		} else if res.RowsAffected == 0 {
+			logger.Infof("callback: task %s already terminal, skip status update", pushLog.TaskNo)
+		}
 	}
 
 	return pushLog.TaskNo

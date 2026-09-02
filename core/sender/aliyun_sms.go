@@ -99,7 +99,7 @@ func (s *AliyunSMSSender) Send(ctx context.Context, req *SendRequest) (*SendResp
 	}
 	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return &SendResponse{Success: false, TaskID: taskID, ErrorMessage: err.Error(), ErrorCode: "HTTP_ERROR", RequestData: form.Encode()}, nil
@@ -193,7 +193,7 @@ func (s *AliyunSMSSender) QueryStatus(ctx context.Context, req *StatusQueryReque
 	}
 	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second, Transport: senderTransport}
 	resp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, err

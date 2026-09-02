@@ -45,6 +45,11 @@ func EnqueueSendMessage(ctx context.Context, producer *taskq.Producer, p SendMes
 }
 
 // EnqueueSendBatchMessage 将批量消息投递任务入队。
-func EnqueueSendBatchMessage(ctx context.Context, producer *taskq.Producer, p SendBatchMessagePayload) (*asynq.TaskInfo, error) {
-	return producer.EnqueuePayload(ctx, TaskSendBatchMessage, p)
+// scheduledAt 非空时按计划时间投递（整批统一到点触发），否则立即执行。
+func EnqueueSendBatchMessage(ctx context.Context, producer *taskq.Producer, p SendBatchMessagePayload, scheduledAt *time.Time) (*asynq.TaskInfo, error) {
+	var opts []asynq.Option
+	if scheduledAt != nil {
+		opts = append(opts, asynq.ProcessAt(*scheduledAt))
+	}
+	return producer.EnqueuePayload(ctx, TaskSendBatchMessage, p, opts...)
 }
