@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
@@ -116,7 +117,32 @@ func (l *ChannelLogic) Update(ctx context.Context, id uint, req *dto.UpdateChann
 }
 
 // Delete 删除通道（软删除）。
+// 存在配置层引用（业务模板/通道-模板绑定/通道-签名映射）时禁止删除，
+// 避免悬空引用导致发送失败；历史任务数据不阻止删除。
 func (l *ChannelLogic) Delete(ctx context.Context, id uint) error {
+	var channel model.Channel
+	if err := l.svc.DB.WithContext(ctx).Where("id = ?", id).First(&channel).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("channel not found")
+		}
+		return err
+	}
+
+	// 配置层引用检查：存在则阻止删除，并列出具体引用类型
+	var refs []string
+	checkRef := func(m any, field, desc string) {
+		var count int64
+		if err := l.svc.DB.WithContext(ctx).Model(m).Where(field+" = ?", id).Count(&count).Error; err == nil && count > 0 {
+			refs = append(refs, fmt.Sprintf("%s(%d)", desc, count))
+		}
+	}
+	checkRef(&model.MessageTemplate{}, "channel_id", "业务模板")
+	checkRef(&model.ChannelTemplateBinding{}, "channel_id", "通道-模板绑定")
+	checkRef(&model.ChannelSignatureMapping{}, "channel_id", "通道-签名映射")
+	if len(refs) > 0 {
+		return fmt.Errorf("通道仍被引用，无法删除：%s。请先删除关联模板或解除绑定", strings.Join(refs, "、"))
+	}
+
 	res := l.svc.DB.WithContext(ctx).Delete(&model.Channel{}, id)
 	if res.Error != nil {
 		return res.Error

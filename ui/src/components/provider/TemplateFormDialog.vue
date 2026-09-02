@@ -20,6 +20,19 @@ const emit = defineEmits<{
 
 const toast = useToastStore()
 const saving = ref(false)
+
+// parseVariablesString 解析历史遗留的 JSON 字符串形态的变量列表（如 '["code"]'）。
+// 兼容向后：老数据可能存为字符串，返回失败时降级为空数组。
+function parseVariablesString(raw: string): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.map(String) : []
+  } catch {
+    return []
+  }
+}
+
 const form = ref<{
   provider_id: number
   template_code: string
@@ -42,12 +55,10 @@ watch(
   (open) => {
     if (!open) return
     if (props.template) {
-      let variables: string[] = []
-      try {
-        variables = props.template.variables ? JSON.parse(props.template.variables) : []
-      } catch {
-        variables = []
-      }
+      // variables 后端返回 JSON 数组（string[]），直接取用；兼容历史 string 形态
+      const variables = Array.isArray(props.template.variables)
+        ? props.template.variables
+        : parseVariablesString(props.template.variables)
       form.value = {
         provider_id: props.template.provider_id,
         template_code: props.template.template_code,

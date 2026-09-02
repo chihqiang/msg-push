@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"chihqiang/msg-push/core/sender"
 	"chihqiang/msg-push/dto"
@@ -215,7 +216,35 @@ func (l *ProviderAccountLogic) Update(ctx context.Context, id uint, req *dto.Upd
 }
 
 // Delete 删除服务商账号。
+// 存在配置层引用（供应商模板/服务商签名/通道-模板绑定/通道-签名映射）时禁止删除，
+// 避免产生悬空引用导致选通道/发送失败；历史投递数据（push_task/push_log/callback_log）
+// 不阻止删除（软删除账号后历史记录仍保留）。
 func (l *ProviderAccountLogic) Delete(ctx context.Context, id uint) error {
+	// 校验服务商账号存在
+	var acc model.ProviderAccount
+	if err := l.svc.DB.WithContext(ctx).Where("id = ?", id).First(&acc).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("provider account not found")
+		}
+		return err
+	}
+
+	// 配置层引用检查：存在引用则阻止删除，并列出具体引用类型
+	var refs []string
+	checkRef := func(m any, field, desc string) {
+		var count int64
+		if err := l.svc.DB.WithContext(ctx).Model(m).Where(field+" = ?", id).Count(&count).Error; err == nil && count > 0 {
+			refs = append(refs, fmt.Sprintf("%s(%d)", desc, count))
+		}
+	}
+	checkRef(&model.ProviderTemplate{}, "provider_id", "供应商模板")
+	checkRef(&model.ProviderSignature{}, "provider_account_id", "服务商签名")
+	checkRef(&model.ChannelTemplateBinding{}, "provider_id", "通道-模板绑定")
+	checkRef(&model.ChannelSignatureMapping{}, "provider_id", "通道-签名映射")
+	if len(refs) > 0 {
+		return fmt.Errorf("服务商账号仍被引用，无法删除：%s。请先解除相关绑定", strings.Join(refs, "、"))
+	}
+
 	res := l.svc.DB.WithContext(ctx).Delete(&model.ProviderAccount{}, id)
 	if res.Error != nil {
 		return res.Error

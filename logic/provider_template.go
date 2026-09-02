@@ -3,6 +3,8 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
@@ -152,7 +154,29 @@ func (l *ProviderTemplateLogic) Update(ctx context.Context, id uint, req *dto.Up
 }
 
 // Delete 删除供应商模板。
+// 被通道-模板绑定引用时禁止删除，避免悬空引用导致选通道失败。
 func (l *ProviderTemplateLogic) Delete(ctx context.Context, id uint) error {
+	var tpl model.ProviderTemplate
+	if err := l.svc.DB.WithContext(ctx).Where("id = ?", id).First(&tpl).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("provider template not found")
+		}
+		return err
+	}
+
+	// 配置层引用检查：存在则阻止删除，并列出具体引用类型
+	var refs []string
+	checkRef := func(m any, field, desc string) {
+		var count int64
+		if err := l.svc.DB.WithContext(ctx).Model(m).Where(field+" = ?", id).Count(&count).Error; err == nil && count > 0 {
+			refs = append(refs, fmt.Sprintf("%s(%d)", desc, count))
+		}
+	}
+	checkRef(&model.ChannelTemplateBinding{}, "provider_template_id", "通道-模板绑定")
+	if len(refs) > 0 {
+		return fmt.Errorf("供应商模板仍被引用，无法删除：%s。请先解除相关绑定", strings.Join(refs, "、"))
+	}
+
 	res := l.svc.DB.WithContext(ctx).Delete(&model.ProviderTemplate{}, id)
 	if res.Error != nil {
 		return res.Error

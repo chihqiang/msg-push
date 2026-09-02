@@ -3,6 +3,8 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/model"
@@ -133,7 +135,29 @@ func (l *ProviderSignatureLogic) Update(ctx context.Context, id uint, req *dto.U
 }
 
 // Delete 删除签名。
+// 被通道-签名映射引用时禁止删除，避免悬空引用导致签名解析失败。
 func (l *ProviderSignatureLogic) Delete(ctx context.Context, id uint) error {
+	var sig model.ProviderSignature
+	if err := l.svc.DB.WithContext(ctx).Where("id = ?", id).First(&sig).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("provider signature not found")
+		}
+		return err
+	}
+
+	// 配置层引用检查：存在则阻止删除，并列出具体引用类型
+	var refs []string
+	checkRef := func(m any, field, desc string) {
+		var count int64
+		if err := l.svc.DB.WithContext(ctx).Model(m).Where(field+" = ?", id).Count(&count).Error; err == nil && count > 0 {
+			refs = append(refs, fmt.Sprintf("%s(%d)", desc, count))
+		}
+	}
+	checkRef(&model.ChannelSignatureMapping{}, "provider_signature_id", "通道-签名映射")
+	if len(refs) > 0 {
+		return fmt.Errorf("服务商签名仍被引用，无法删除：%s。请先解除相关映射", strings.Join(refs, "、"))
+	}
+
 	res := l.svc.DB.WithContext(ctx).Delete(&model.ProviderSignature{}, id)
 	if res.Error != nil {
 		return res.Error

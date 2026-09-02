@@ -163,7 +163,7 @@ export interface ProviderTemplate {
   template_name: string
   content_type: string
   template_content: string
-  variables: string
+  variables: string[]
   status: number
   remark: string
   created_at: string
