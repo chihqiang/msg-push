@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import PageToolbar from '@/components/ui/PageToolbar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
@@ -14,6 +14,30 @@ const pageSize = 20
 const status = ref('')
 const taskNo = ref('')
 const requestId = ref('')
+
+// 状态选项：任务与批量语义不同，按当前 Tab 切换
+const statusOptions = computed<{ value: string; label: string }[]>(() =>
+  tab.value === 'batches'
+    ? [
+        { value: 'processing', label: '处理中' },
+        { value: 'completed', label: '已完成' },
+        { value: 'failed', label: '失败' },
+      ]
+    : [
+        { value: 'pending', label: '待发送' },
+        { value: 'sending', label: '发送中' },
+        { value: 'success', label: '成功' },
+        { value: 'failed', label: '失败' },
+      ]
+)
+
+// 切换 Tab：重置页码与状态过滤，避免共用 page/status 造成残留
+function switchTab(t: 'tasks' | 'batches') {
+  if (tab.value === t) return
+  tab.value = t
+  status.value = ''
+  page.value = 1
+}
 
 const { data: tasksData, isLoading: tasksLoading } = useQuery({
   queryKey: ['tasks', page, status, taskNo, requestId],
@@ -107,14 +131,14 @@ const batchColumns = [
       <button
         class="border-b-2 px-3 py-2 text-sm transition-colors"
         :class="tab === 'tasks' ? 'border-primary font-medium text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'"
-        @click="tab = 'tasks'"
+        @click="switchTab('tasks')"
       >
         推送任务
       </button>
       <button
         class="border-b-2 px-3 py-2 text-sm transition-colors"
         :class="tab === 'batches' ? 'border-primary font-medium text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'"
-        @click="tab = 'batches'"
+        @click="switchTab('batches')"
       >
         批量任务
       </button>
@@ -124,10 +148,7 @@ const batchColumns = [
     <div class="mb-4 flex items-center gap-2">
       <select v-model="status" class="h-9 rounded-md border border-input bg-card px-3 text-sm outline-none focus:border-primary">
         <option value="">全部状态</option>
-        <option value="pending">待发送</option>
-        <option value="sending">发送中</option>
-        <option value="success">成功</option>
-        <option value="failed">失败</option>
+        <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
     </div>
 

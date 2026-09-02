@@ -57,16 +57,19 @@ const commonParams = () => ({
 const { data: pushData, isLoading: pushLoading } = useQuery({
   queryKey: ['push-logs', page, taskNo, requestId, status, startDate, endDate],
   queryFn: () => listPushLogs(commonParams()),
+  enabled: () => tab.value === 'push', // 仅当前 Tab 生效，避免三个 Tab 同时请求
 })
 
 const { data: callbackData, isLoading: callbackLoading } = useQuery({
   queryKey: ['callback-logs', page, taskNo, requestId, status, startDate, endDate],
   queryFn: () => listCallbacks(commonParams()),
+  enabled: () => tab.value === 'callback',
 })
 
 const { data: webhookData, isLoading: webhookLoading } = useQuery({
   queryKey: ['webhook-logs', page, taskNo, requestId, status, startDate, endDate],
   queryFn: () => listWebhookLogs(commonParams()),
+  enabled: () => tab.value === 'webhook',
 })
 
 // 关联名称映射：服务商账号 / Webhook 配置

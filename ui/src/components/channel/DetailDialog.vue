@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 通道详情弹窗：健康历史 / 模板绑定 / 签名映射 / 测试发送
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { Send, HeartPulse, Cable, FileSignature, Trash2, Pencil, Plus } from '@lucide/vue'
 import Modal from '@/components/ui/Modal.vue'
@@ -32,36 +32,35 @@ const emit = defineEmits<{
 const toast = useToastStore()
 const detailTab = ref<'health' | 'bindings' | 'signatures' | 'test'>('health')
 
-// 各 tab 按需加载
+// 各 tab 按需加载：queryKey 直接用 channel.id 值（避免用函数导致换通道后取到过期 id）
 const { data: healthData, refetch: refetchHealth } = useQuery({
-  queryKey: ['channel-health', () => props.channel?.id],
+  queryKey: ['channel-health', props.channel?.id],
   queryFn: () => channelHealthHistory(props.channel!.id, { page: 1, page_size: 20 }),
   enabled: false,
 })
 
 const { data: bindingsData, refetch: refetchBindings } = useQuery({
-  queryKey: ['channel-bindings', () => props.channel?.id],
+  queryKey: ['channel-bindings', props.channel?.id],
   queryFn: () => channelBindings(props.channel!.id, { page: 1, page_size: 50 }),
   enabled: false,
 })
 
 const { data: sigMappingsData, refetch: refetchSigs } = useQuery({
-  queryKey: ['channel-sig-mappings', () => props.channel?.id],
+  queryKey: ['channel-sig-mappings', props.channel?.id],
   queryFn: () => channelSignatureMappings(props.channel!.id, { page: 1, page_size: 50 }),
   enabled: false,
 })
 
-// 打开时刷新数据
+// 打开时刷新数据：用 nextTick 替代 setTimeout，避免魔法数字时序
 watch(
   () => props.open,
-  (open) => {
+  async (open) => {
     if (!open || !props.channel) return
     detailTab.value = 'health'
-    setTimeout(() => {
-      refetchHealth()
-      refetchBindings()
-      refetchSigs()
-    }, 50)
+    await nextTick()
+    refetchHealth()
+    refetchBindings()
+    refetchSigs()
   }
 )
 

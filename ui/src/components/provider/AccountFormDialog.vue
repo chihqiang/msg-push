@@ -33,6 +33,8 @@ watch(
   () => props.open,
   (open) => {
     if (!open) return
+    // 重置密码明文显隐状态，避免上次打开的明文残留（隐私）
+    showPassword.value = {}
     if (props.account) {
       const config = props.account.config ?? {}
       form.value = {

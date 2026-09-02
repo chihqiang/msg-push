@@ -65,6 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
         accessToken: resp.access_token,
         refreshToken: resp.refresh_token ?? refreshToken.value,
         expiresAt: resp.expires_at,
+        username: username.value, // 刷新 username cookie 过期时间，避免 7 天后展示名丢失
       })
       return true
     } catch {
