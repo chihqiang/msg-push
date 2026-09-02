@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { Plus, Pencil, Trash2, ClipboardCopy } from '@lucide/vue'
 import PageToolbar from '@/components/ui/PageToolbar.vue'
@@ -24,8 +25,38 @@ import type { ProviderAccount, ProviderMeta, ProviderSignature, ProviderTemplate
 
 const toast = useToastStore()
 const queryClient = useQueryClient()
+const route = useRoute()
 
 const tab = ref<'accounts' | 'signatures' | 'templates'>('accounts')
+
+// 新手引导跳转：?tab= 切换 Tab，?action=create 自动打开对应新建弹窗
+// 不能用 immediate（此时弹窗 ref 尚未初始化会 TDZ 报错），用 onMounted + watch
+watch(
+  () => route.query,
+  (q) => {
+    const t = q.tab
+    if (t === 'accounts' || t === 'signatures' || t === 'templates') {
+      tab.value = t
+    }
+    if (q.action === 'create') {
+      if (tab.value === 'signatures') openCreateSig()
+      else if (tab.value === 'templates') openCreateTpl()
+      else openCreateAccount()
+    }
+  }
+)
+onMounted(() => {
+  const q = route.query
+  const t = q.tab
+  if (t === 'accounts' || t === 'signatures' || t === 'templates') {
+    tab.value = t
+  }
+  if (q.action === 'create') {
+    if (tab.value === 'signatures') openCreateSig()
+    else if (tab.value === 'templates') openCreateTpl()
+    else openCreateAccount()
+  }
+})
 
 // 服务商元信息
 const { data: providers } = useQuery({

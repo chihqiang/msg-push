@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { MessageSquareText, LogOut, Menu, X, ChevronDown, UserCog } from '@lucide/vue'
+import { MessageSquareText, LogOut, Menu, X, ChevronDown, UserCog, Lightbulb } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import ProfileDialog from '@/components/account/ProfileDialog.vue'
+import OnboardingWizard from '@/components/onboarding/OnboardingWizard.vue'
 import { getMenuGroups } from '@/router'
 
 const route = useRoute()
@@ -34,6 +35,9 @@ function openProfile() {
   userMenuOpen.value = false
   profileOpen.value = true
 }
+
+// 新手引导
+const guideOpen = ref(false)
 
 function toggleUserMenu() {
   userMenuOpen.value = !userMenuOpen.value
@@ -123,6 +127,15 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
         <h1 class="text-base font-semibold text-foreground">{{ pageTitle }}</h1>
 
         <div class="ml-auto flex items-center gap-3">
+          <!-- 新手引导按钮 -->
+          <button
+            class="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="新手引导：按消息类型配置完整链路"
+            @click="guideOpen = true"
+          >
+            <Lightbulb class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline">新手引导</span>
+          </button>
           <!-- 用户下拉 -->
           <div ref="userMenuRef" class="relative">
             <button
@@ -194,5 +207,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
 
     <!-- 个人中心弹窗 -->
     <ProfileDialog :open="profileOpen" @close="profileOpen = false" />
+
+    <!-- 新手引导向导 -->
+    <OnboardingWizard :open="guideOpen" @close="guideOpen = false" />
   </div>
 </template>

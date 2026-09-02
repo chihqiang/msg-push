@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { Plus, Pencil, Trash2 } from '@lucide/vue'
 import PageToolbar from '@/components/ui/PageToolbar.vue'
@@ -14,6 +15,19 @@ import type { MessageTemplate } from '@/types'
 
 const toast = useToastStore()
 const queryClient = useQueryClient()
+const route = useRoute()
+
+// 新手引导跳转：?action=create 自动打开新建模板弹窗
+// 不能用 immediate（此时 formOpen 等 ref 尚未初始化会 TDZ 报错），用 onMounted + watch
+watch(
+  () => route.query,
+  (q) => {
+    if (q.action === 'create') openCreate()
+  }
+)
+onMounted(() => {
+  if (route.query.action === 'create') openCreate()
+})
 
 const page = ref(1)
 const pageSize = 20
