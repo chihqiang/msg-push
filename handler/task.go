@@ -43,8 +43,8 @@ func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 
 // GetTask 任务详情（按 id）。
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -93,8 +93,8 @@ func (h *TaskHandler) ListBatchTasks(w http.ResponseWriter, r *http.Request) {
 
 // GetBatchTask 批次详情（按 id）。
 func (h *TaskHandler) GetBatchTask(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

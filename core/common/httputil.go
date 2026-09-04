@@ -32,28 +32,3 @@ func AccountIDFromContext(ctx context.Context) (uint, bool) {
 	}
 	return uint(id), true
 }
-
-// ParseID 解析路径参数中的 uint ID。
-func ParseID(r *http.Request) (uint, error) {
-	return ParseIDValue(r, "id")
-}
-
-// ParseIDValue 解析指定名称的路径参数为 uint ID。
-// 用于嵌套路由（如 /channels/{id}/bindings/{binding_id}）取非首段参数。
-func ParseIDValue(r *http.Request, name string) (uint, error) {
-	raw := r.PathValue(name)
-	id, err := strconv.ParseUint(raw, 10, 64)
-	if err != nil || id == 0 {
-		return 0, err
-	}
-	return uint(id), nil
-}
-
-// ChannelIDFromPath 解析路径中的通道 ID。
-func ChannelIDFromPath(r *http.Request) (uint, bool) {
-	channelID, err := ParseID(r)
-	if err != nil {
-		return 0, false
-	}
-	return channelID, true
-}

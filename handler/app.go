@@ -67,8 +67,8 @@ func (h *AppHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 应用详情。
 func (h *AppHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -82,8 +82,8 @@ func (h *AppHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新应用。
 func (h *AppHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -100,8 +100,8 @@ func (h *AppHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete 删除应用。
 func (h *AppHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -114,8 +114,8 @@ func (h *AppHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // ResetSecret 重置应用密钥。
 func (h *AppHandler) ResetSecret(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

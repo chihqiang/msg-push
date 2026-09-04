@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"chihqiang/msg-push/core/common"
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/logic"
 	"chihqiang/msg-push/svc"
@@ -81,15 +80,4 @@ func (h *AccountHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	httpx.OkJSONCtx(r.Context(), w, nil)
-}
-
-// parseID 解析路径参数中的 uint ID。
-func parseID(r *http.Request) (uint, error) {
-	return common.ParseID(r)
-}
-
-// parseIDValue 解析指定名称的路径参数为 uint ID。
-// 用于嵌套路由（如 /channels/{id}/bindings/{binding_id}）取非首段参数。
-func parseIDValue(r *http.Request, name string) (uint, error) {
-	return common.ParseIDValue(r, name)
 }

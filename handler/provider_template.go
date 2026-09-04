@@ -57,8 +57,8 @@ func (h *ProviderTemplateHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 供应商模板详情。
 func (h *ProviderTemplateHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -72,8 +72,8 @@ func (h *ProviderTemplateHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新供应商模板。
 func (h *ProviderTemplateHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -90,8 +90,8 @@ func (h *ProviderTemplateHandler) Update(w http.ResponseWriter, r *http.Request)
 
 // Delete 删除供应商模板。
 func (h *ProviderTemplateHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -104,8 +104,8 @@ func (h *ProviderTemplateHandler) Delete(w http.ResponseWriter, r *http.Request)
 
 // GetAvailableByProvider 获取指定服务商账号下的可用模板（用于通道绑定下拉）。
 func (h *ProviderTemplateHandler) GetAvailableByProvider(w http.ResponseWriter, r *http.Request) {
-	providerID, err := parseID(r)
-	if err != nil {
+	providerID := httpx.PathValue(r, "id", uint(0))
+	if providerID == 0 {
 		writeBadRequest(r.Context(), w, "invalid provider id")
 		return
 	}

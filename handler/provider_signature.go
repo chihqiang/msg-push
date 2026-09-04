@@ -57,8 +57,8 @@ func (h *ProviderSignatureHandler) List(w http.ResponseWriter, r *http.Request) 
 
 // Get 签名详情。
 func (h *ProviderSignatureHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -72,8 +72,8 @@ func (h *ProviderSignatureHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新签名。
 func (h *ProviderSignatureHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -90,8 +90,8 @@ func (h *ProviderSignatureHandler) Update(w http.ResponseWriter, r *http.Request
 
 // Delete 删除签名。
 func (h *ProviderSignatureHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -104,8 +104,8 @@ func (h *ProviderSignatureHandler) Delete(w http.ResponseWriter, r *http.Request
 
 // GetAvailableByProvider 获取指定服务商账号下的可用签名（用于通道签名映射下拉）。
 func (h *ProviderSignatureHandler) GetAvailableByProvider(w http.ResponseWriter, r *http.Request) {
-	providerID, err := parseID(r)
-	if err != nil {
+	providerID := httpx.PathValue(r, "id", uint(0))
+	if providerID == 0 {
 		writeBadRequest(r.Context(), w, "invalid provider id")
 		return
 	}

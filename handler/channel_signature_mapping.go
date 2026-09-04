@@ -23,8 +23,8 @@ func NewChannelSignatureMappingHandler(s *svc.ServiceContext) *ChannelSignatureM
 
 // Create 创建签名映射。
 func (h *ChannelSignatureMappingHandler) Create(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
@@ -42,8 +42,8 @@ func (h *ChannelSignatureMappingHandler) Create(w http.ResponseWriter, r *http.R
 
 // List 签名映射列表。
 func (h *ChannelSignatureMappingHandler) List(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
@@ -67,13 +67,13 @@ func (h *ChannelSignatureMappingHandler) List(w http.ResponseWriter, r *http.Req
 
 // Get 签名映射详情。
 func (h *ChannelSignatureMappingHandler) Get(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
-	id, err := parseIDValue(r, "mapping_id")
-	if err != nil {
+	id := httpx.PathValue(r, "mapping_id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid mapping id")
 		return
 	}
@@ -87,13 +87,13 @@ func (h *ChannelSignatureMappingHandler) Get(w http.ResponseWriter, r *http.Requ
 
 // Update 更新签名映射。
 func (h *ChannelSignatureMappingHandler) Update(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
-	id, err := parseIDValue(r, "mapping_id")
-	if err != nil {
+	id := httpx.PathValue(r, "mapping_id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid mapping id")
 		return
 	}
@@ -110,13 +110,13 @@ func (h *ChannelSignatureMappingHandler) Update(w http.ResponseWriter, r *http.R
 
 // Delete 删除签名映射。
 func (h *ChannelSignatureMappingHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
-	id, err := parseIDValue(r, "mapping_id")
-	if err != nil {
+	id := httpx.PathValue(r, "mapping_id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid mapping id")
 		return
 	}

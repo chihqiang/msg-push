@@ -57,8 +57,8 @@ func (h *ChannelHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 通道详情。
 func (h *ChannelHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -72,8 +72,8 @@ func (h *ChannelHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新通道。
 func (h *ChannelHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -90,8 +90,8 @@ func (h *ChannelHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete 删除通道。
 func (h *ChannelHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

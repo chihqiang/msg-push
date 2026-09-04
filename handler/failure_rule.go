@@ -57,8 +57,8 @@ func (h *FailureRuleHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 失败规则详情。
 func (h *FailureRuleHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -72,8 +72,8 @@ func (h *FailureRuleHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新失败规则。
 func (h *FailureRuleHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -90,8 +90,8 @@ func (h *FailureRuleHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete 删除失败规则。
 func (h *FailureRuleHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

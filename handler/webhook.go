@@ -57,8 +57,8 @@ func (h *WebhookHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get Webhook 配置详情。
 func (h *WebhookHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -72,8 +72,8 @@ func (h *WebhookHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新 Webhook 配置。
 func (h *WebhookHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -90,8 +90,8 @@ func (h *WebhookHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete 删除 Webhook 配置。
 func (h *WebhookHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

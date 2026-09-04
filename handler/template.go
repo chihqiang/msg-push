@@ -57,8 +57,8 @@ func (h *TemplateHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 模板详情。
 func (h *TemplateHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -72,8 +72,8 @@ func (h *TemplateHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新模板。
 func (h *TemplateHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -90,8 +90,8 @@ func (h *TemplateHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete 删除模板。
 func (h *TemplateHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

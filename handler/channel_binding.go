@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"chihqiang/msg-push/core/common"
 	"chihqiang/msg-push/dto"
 	"chihqiang/msg-push/logic"
 	"chihqiang/msg-push/svc"
@@ -22,15 +21,10 @@ func NewChannelBindingHandler(s *svc.ServiceContext) *ChannelBindingHandler {
 	return &ChannelBindingHandler{svc: s, logic: logic.NewChannelBindingLogic(s)}
 }
 
-// channelIDFromPath 解析通道 ID。
-func channelIDFromPath(r *http.Request) (uint, bool) {
-	return common.ChannelIDFromPath(r)
-}
-
 // Create 创建绑定。
 func (h *ChannelBindingHandler) Create(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
@@ -48,8 +42,8 @@ func (h *ChannelBindingHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // List 绑定列表。
 func (h *ChannelBindingHandler) List(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
@@ -73,13 +67,13 @@ func (h *ChannelBindingHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 绑定详情。
 func (h *ChannelBindingHandler) Get(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
-	id, err := parseIDValue(r, "binding_id")
-	if err != nil {
+	id := httpx.PathValue(r, "binding_id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid binding id")
 		return
 	}
@@ -93,13 +87,13 @@ func (h *ChannelBindingHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新绑定。
 func (h *ChannelBindingHandler) Update(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
-	id, err := parseIDValue(r, "binding_id")
-	if err != nil {
+	id := httpx.PathValue(r, "binding_id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid binding id")
 		return
 	}
@@ -116,13 +110,13 @@ func (h *ChannelBindingHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete 删除绑定。
 func (h *ChannelBindingHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
-	id, err := parseIDValue(r, "binding_id")
-	if err != nil {
+	id := httpx.PathValue(r, "binding_id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid binding id")
 		return
 	}

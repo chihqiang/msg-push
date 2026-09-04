@@ -73,8 +73,8 @@ func (h *ProviderAccountHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get 服务商账号详情。
 func (h *ProviderAccountHandler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -88,8 +88,8 @@ func (h *ProviderAccountHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Update 更新服务商账号。
 func (h *ProviderAccountHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}
@@ -106,8 +106,8 @@ func (h *ProviderAccountHandler) Update(w http.ResponseWriter, r *http.Request) 
 
 // Delete 删除服务商账号。
 func (h *ProviderAccountHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

@@ -24,8 +24,8 @@ func NewQuotaHandler(s *svc.ServiceContext) *QuotaHandler {
 
 // GetUsage 查询应用今日配额使用情况。
 func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
+	id := httpx.PathValue(r, "id", uint(0))
+	if id == 0 {
 		writeBadRequest(r.Context(), w, "invalid id")
 		return
 	}

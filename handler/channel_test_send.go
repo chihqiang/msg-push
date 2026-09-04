@@ -23,8 +23,8 @@ func NewChannelTestHandler(s *svc.ServiceContext) *ChannelTestHandler {
 
 // Test 通道测试发送。
 func (h *ChannelTestHandler) Test(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
@@ -42,8 +42,8 @@ func (h *ChannelTestHandler) Test(w http.ResponseWriter, r *http.Request) {
 
 // HealthHistory 通道健康历史。
 func (h *ChannelTestHandler) HealthHistory(w http.ResponseWriter, r *http.Request) {
-	channelID, ok := channelIDFromPath(r)
-	if !ok {
+	channelID := httpx.PathValue(r, "id", uint(0))
+	if channelID == 0 {
 		httpx.WriteHTTPErrorCtx(r.Context(), w, http.StatusBadRequest, "invalid channel id")
 		return
 	}
