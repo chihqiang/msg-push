@@ -3,7 +3,7 @@ module chihqiang/msg-push
 go 1.25.11
 
 require (
-	github.com/chihqiang/infra-go v0.0.0-20260903144851-7aaf32cd3a63
+	github.com/chihqiang/infra-go v0.0.0-20260905050724-8e4cc73d9210
 	github.com/hibiken/asynq v0.26.0
 	github.com/redis/go-redis/v9 v9.21.0
 	gorm.io/gorm v1.31.2
@@ -13,6 +13,8 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.30.3 // indirect
@@ -29,6 +31,10 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/otel v1.44.0 // indirect
+	go.opentelemetry.io/otel/metric v1.44.0 // indirect
+	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
