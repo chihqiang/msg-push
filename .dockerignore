@@ -1,0 +1,21 @@
+# Git
+.git
+.github
+.gitignore
+
+# 文档与示例（不影响编译）
+docs
+LICENSE
+README.md
+
+# 依赖与构建产物
+ui/node_modules
+bin
+/dist
+*.db
+*.log
+coverage.*
+*.out
+
+# macOS
+**/.DS_Store

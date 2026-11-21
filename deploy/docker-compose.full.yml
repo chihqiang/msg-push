@@ -1,0 +1,85 @@
+# msg-push 完整编排（MySQL + Redis + msg-push 一键启动）
+# 用法：
+#   启动：docker compose -f deploy/docker-compose.full.yml up -d --build
+#   停止：docker compose -f deploy/docker-compose.full.yml down
+#   查看：docker compose -f deploy/docker-compose.full.yml ps
+#
+# 说明：
+#   - msg-push 镜像由项目根目录 Dockerfile 构建（多阶段：node 前端 → golang 编译 → alpine 运行）
+#   - 访问管理后台：http://localhost:8080 （默认账号 admin / admin123）
+#   - 敏感信息通过环境变量覆盖：JWT_SECRET / ACCOUNT_SEED_PASSWORD / MYSQL_ROOT_PASSWORD
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: msgpush-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-msgpush123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-msg_push}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD:-msgpush123456}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: msgpush-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  msg-push:
+    # context 指向项目根目录（Dockerfile 在根目录）
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: zhiqiangwang/app:msg-push
+    container_name: msg-push
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: prod
+      # 容器网络内通过服务名访问 MySQL / Redis
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-msgpush123456}
+      DB_NAME: ${MYSQL_DATABASE:-msg_push}
+      REDIS_ADDR: redis:6379
+      TASKQ_REDIS_ADDR: redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      ACCOUNT_SEED_USERNAME: admin
+      ACCOUNT_SEED_PASSWORD: ${ACCOUNT_SEED_PASSWORD:-admin123}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health", ">", "/dev/null"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  mysql-data:
+  redis-data:

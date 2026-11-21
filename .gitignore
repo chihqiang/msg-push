@@ -30,3 +30,10 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# 运行时数据（SQLite 数据库等）
+*.db
+# 构建产物
+msg-push
+/bin/
+/dist/

@@ -1,0 +1,67 @@
+# msg-push 服务配置（开发环境默认值）
+# 敏感信息（数据库密码、JWT Secret、Redis 密码等）通过环境变量 ${VAR} 覆盖。
+
+# HTTP 服务配置（嵌入 rest.Config，键位于配置顶层）
+host: 0.0.0.0
+port: 8080
+health:
+  enabled: true
+  path: /health
+
+name: msg-push
+env: dev
+
+logger:
+  # 日志级别：debug / info / error / severe
+  level: info
+  # 输出模式：console（控制台）/ file（文件）/ volume
+  mode: console
+  # 输出格式：plain（可读文本）/ json
+  encoding: plain
+  serviceName: msg-push
+
+# 默认使用 MySQL（本地用 docker compose -f deploy/docker-compose.yml up -d 启动基础服务）。
+# 也可切换回 SQLite（开箱即用）：
+#   db: { driver: sqlite, database: msg-push.db }
+# 支持环境变量覆盖：
+#   db: { driver: mysql, host: ${DB_HOST}, port: 3306, username: ${DB_USER}, password: ${DB_PASSWORD}, database: ${DB_NAME} }
+db:
+  driver: mysql
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: msgpush123456
+  database: msg_push
+  maxIdleConns: 10
+  maxOpenConns: 100
+
+redis:
+  addr: 127.0.0.1:6379
+  keyPrefix: msg-push
+
+jwt:
+  secret: change-me-in-prod
+  issuer: msg-push
+  access_token_expire: 2h
+  refresh_token_expire: 168h
+
+taskq:
+  redisAddr: 127.0.0.1:6379
+  concurrency: 10
+  defaultMaxRetry: 3
+  defaultTimeout: 30m
+  defaultQueue: default
+
+# 后台调度配置（可选，留空用默认值）
+scheduler:
+  # 短信发送后多久未收到回执视为回调超时（服务商回执慢时建议调大）
+  sms_callback_timeout: 60s
+  # 回调超时后再等多久仍无回执则转 failed 终态
+  sms_hard_timeout: 10m
+  # 业务统计时区（IANA 名，如 Asia/Shanghai）；留空用服务器本地时区
+  business_timezone: ""
+
+# 账号种子（仅首次建库时创建）
+account_seed:
+  username: admin
+  password: admin123
